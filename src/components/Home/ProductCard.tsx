@@ -11,6 +11,7 @@ export interface UIProductCard {
   title: string
   subtitle: string
   price: number
+  slag: string,
   img: string
   deliveryTime?: string
 }
@@ -21,16 +22,15 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { cartItems, addItem, increaseQuantity, decreaseQuantity } = useCart()
-
   const inCart = cartItems.find((c) => c.item.id === product.id)
   const qty = inCart?.quantity || 0
-
   return (
     <div className="bg-white rounded-2xl shadow-md p-3 hover:shadow-lg transition duration-200 h-full flex flex-col justify-between border border-gray-300
     ">
       {/* Product Image */}
+      
       <Link
-        href={`/categoriesProducts/${product.categoryId}/${product.id}`}
+        href={`/${product.categoryId}/${product.slag}`}
         className="block"
       >
         <div className="relative w-full h-36 md:h-40 lg:h-44 mb-2">

@@ -16,8 +16,8 @@ export default function ProductSlidersPage() {
     async function fetchData() {
       try {
         const data = await getCategoriesForSlider();
-        console.log(data, "to get id from api")
         setCategories(data);
+        
       } catch (err) {
         console.error("Failed to fetch categories:", err);
       } finally {

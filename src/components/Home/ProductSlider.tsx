@@ -10,6 +10,7 @@ export interface SliderProduct {
   categoryId: string;
   title: string;
   subtitle: string;
+  slag:string;
   price: number;
   img: string;
   deliveryTime?: string;
@@ -60,6 +61,7 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
               categoryId: p.categoryId,
               title: p.title,
               subtitle: p.subtitle,
+              slag:p.slag,
               price: p.price,
               img: p.img,
               deliveryTime: p.deliveryTime,

@@ -26,8 +26,7 @@ export default function CategoryWithProducts({ params }: CategoryPageProps) {
   const [subcategories, setSubcategories] = useState<CategoryNode[]>([]);
   const [activeSlug, setActiveSlug] = useState<string>(""); 
   const [products, setProducts] = useState<UIProductCard[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // ✅ single loading state
-
+  const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {
   const fetchData = async () => {
     try {
@@ -52,12 +51,14 @@ export default function CategoryWithProducts({ params }: CategoryPageProps) {
                 title: p.productName,
                 subtitle: p.productCode,
                 price: p.dp,
+                slag:p.slagurl,
                 img: p.defaultImage.startsWith("http")
                   ? p.defaultImage
                   : `${API_BASE_URL}${p.defaultImage}`,
                 deliveryTime: "16 MINS",
               })
             );
+             console.log(mapped, "product details of specific categries")
             setProducts(mapped);
           }
         }

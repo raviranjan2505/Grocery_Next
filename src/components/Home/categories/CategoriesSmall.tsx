@@ -48,7 +48,7 @@ const Categories = () => {
 
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
         {loading
-          ? Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />) // ✅ use skeleton component
+          ? Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
           : categories.map((cat) => (
               <Link key={cat.id} href={`/${cat.id}`}>
                 <Card className="cursor-pointer hover:shadow-md transition rounded-xl">

@@ -82,7 +82,7 @@ export const useLoginStore = create<LoginStore>()(
         step: "mobile",
         mobile: "",
         otp: Array(6).fill(""),
-        successMessage: "OTP Verified ✅ Login Successful 🎉"
+        successMessage: "OTP Verified. Login Successful!"
       })
       return true
     } catch {
@@ -91,7 +91,6 @@ export const useLoginStore = create<LoginStore>()(
     }
   },
 
-      // 🔹 Logout
       logout: async () => {
         set({
           user: null,
@@ -108,7 +107,7 @@ export const useLoginStore = create<LoginStore>()(
       partialize: (state) => ({
         token: state.token,
         user: state.user,
-      }), // only persist token & user
+      }), 
     }
   )
 )
