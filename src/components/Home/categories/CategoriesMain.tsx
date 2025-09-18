@@ -48,6 +48,7 @@ export default function CategoriesMain() {
     fetchCategories();
   }, []);
 
+  
   return (
     <div className="px-4 md:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
       {loading

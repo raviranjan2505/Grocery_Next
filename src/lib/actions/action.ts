@@ -1,6 +1,3 @@
-
-
-
 import axiosInstance from "@/lib/axios";
 import { API_ROUTES, API_BASE_URL } from "@/utils/api";
 
@@ -13,7 +10,6 @@ export interface Product {
   category: string;
   thumbnail: string;
   images: string[];
-  // add any other fields your real API returns
 }
 
 // ✅ Get product details from your actual API
@@ -24,7 +20,7 @@ export const getProductDetails = async (
     const res = await axiosInstance.get<Product>(`${API_ROUTES.PRODUCTS}/slag/${slag}`);
     return res.data;
   } catch (error) {
-    console.error("❌ Error fetching product details:", error);
+    console.error("Error fetching product details:", error);
     return null;
   }
 };
@@ -40,11 +36,6 @@ export interface SliderProduct {
   deliveryTime: string;
 }
 
-
-
-
-
-// lib/actions/action.ts
 export interface CategoryResponse {
   categoryId: number;
   categoryName: string;
@@ -59,7 +50,7 @@ export const getCategories = async (): Promise<CategoryResponse[]> => {
     const res = await axiosInstance.get<{ data: CategoryResponse[] }>(API_ROUTES.CATEGORIES);
     return res.data.data;
   } catch (error) {
-    console.error("❌ Error fetching categories:", error);
+    console.error("Error fetching categories:", error);
     return [];
   }
 };
@@ -70,7 +61,7 @@ export async function getCategoryById(id: number) {
     const res = await axiosInstance.get(`${API_ROUTES.CATEGORIES}/${id}`);
     return res.data;
   } catch (error) {
-    console.error("❌ Error fetching category by ID:", error);
+    console.error("Error fetching category by ID:", error);
     return null;
   }
 }
@@ -82,7 +73,7 @@ export async function getProductsBySlug(slug: string) {
    
     return res.data;
   } catch (error) {
-    console.error("❌ Error fetching products by slug:", error);
+    console.error("Error fetching products by slug:", error);
     return [];
   }
 }
@@ -119,7 +110,7 @@ export const getCategoriesForSlider = async (): Promise<
     console.log("categories responsesdsds ✅", categories);
     return categories;
   } catch (error) {
-    console.error("❌ Error fetching categories:", error);
+    console.error("Error fetching categories:", error);
     return [];
   }
 };
@@ -131,4 +122,42 @@ export const getProductsByCategory = async (
   const categories = await getCategoriesForSlider();
   const category = categories.find((c) => c.slug === slug);
   return category ? category.products : [];
+};
+
+
+// types for banners
+export interface Banner {
+  imgId: number;
+  pid: number;
+  imgName: string;
+  imgUrl: string;
+  defaultImg: boolean;
+  isActive: boolean;
+  bannerTypeId: number;
+  bannerTypeName: string;
+  link: number;
+  linkType: number;
+  displayOrder: number;
+  categoryId: number;
+  productId: number;
+}
+
+// ✅ Fetch Active Banners
+export const getActiveBanners = async (): Promise<Banner[]> => {
+  try {
+    const res = await axiosInstance.get<{ data: Banner[] }>(
+      `${API_ROUTES.BANNERS}/active`
+    );
+
+    // Attach base URL if image path is relative
+    return res.data.data.map((b: Banner) => ({
+      ...b,
+      imgUrl: b.imgUrl.startsWith("http")
+        ? b.imgUrl
+        : `${API_BASE_URL}${b.imgUrl}`,
+    }));
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    return [];
+  }
 };

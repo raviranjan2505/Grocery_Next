@@ -34,15 +34,15 @@ useEffect(() => {
 
 }, [successMessage, onOpenChange, setSuccessMessage])
 
-  // ❌ Show error toast
+  //  Show error toast
   useEffect(() => {
     if (!error) return
-    toast.error(`Signup Failed ❌\n${error}`)
+    toast.error(`Signup Failed \n${error}`)
   }, [error])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed left-1/2 -translate-x-1/2 sm:top-1/2 sm:-translate-y-1/2 bottom-0 sm:rounded-xl rounded-t-2xl w-full max-w-md">
+      <DialogContent className="fixed h-[60%] left-1/2 -translate-x-1/2 sm:top-1/2 sm:-translate-y-1/2 bottom-0 sm:rounded-xl rounded-t-2xl w-full max-w-md">
         <DialogHeader>
           <DialogTitle className="flex flex-col items-center">
             <div className="bg-yellow-400 text-black px-4 py-2 rounded-full font-bold text-lg">
