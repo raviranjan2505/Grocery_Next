@@ -1,23 +1,49 @@
 import axiosInstance from "@/lib/axios";
 import { API_ROUTES, API_BASE_URL } from "@/utils/api";
 
-export interface Product {
-  id: number;
-  title: string;
-  description: string;
-  price: number;
-  brand: string;
-  category: string;
-  thumbnail: string;
-  images: string[];
+
+export interface ProductImage {
+  imageName: string;
+  image: string;
 }
 
-// ✅ Get product details from your actual API
+export interface ProductSpecification {
+  id: number;
+  pid: number;
+  name: string;
+  value: string;
+}
+
+// src/lib/actions/types.ts
+export interface ProductDetails {
+  pid: number;
+  pCode: string;
+  productName: string;
+  categoryName: string;
+  subCategoryName: string;
+  details: string;
+  dp: number;
+  mrp: number;
+  wishlistEnable: boolean;
+  sellerName: string;
+  maxQuantity: number;
+  outstockPurchase: boolean;
+  showQty: boolean;
+  bv: number; 
+  productImages: ProductImage[];
+  productSpecifications: ProductSpecification[];
+  productAttributes: any[];
+}
+
+
+
 export const getProductDetails = async (
   slag: string
-): Promise<Product | null> => {
+): Promise<{ success: boolean; message: string; data: ProductDetails } | null> => {
   try {
-    const res = await axiosInstance.get<Product>(`${API_ROUTES.PRODUCTS}/slag/${slag}`);
+    const res = await axiosInstance.get<{ success: boolean; message: string; data: ProductDetails }>(
+      `${API_ROUTES.PRODUCTS}/slag/${slag}`
+    );
     return res.data;
   } catch (error) {
     console.error("Error fetching product details:", error);
@@ -25,17 +51,17 @@ export const getProductDetails = async (
   }
 };
 
-// types for products
+
 export interface SliderProduct {
-  id: number;
-  categoryId: string;
+  id: number;        // or string
+  categoryId: string; // in action.ts you might have number sometimes
   title: string;
   subtitle: string;
+  slag: string;      // sometimes missing
   price: number;
   img: string;
-  deliveryTime: string;
+  deliveryTime?: string;
 }
-
 export interface CategoryResponse {
   categoryId: number;
   categoryName: string;
@@ -78,42 +104,42 @@ export async function getProductsBySlug(slug: string) {
   }
 }
 
-// ✅ Fetch categories WITH products (slider)
+// src/lib/actions/action.ts
 export const getCategoriesForSlider = async (): Promise<
   { slug: string; name: string; products: SliderProduct[] }[]
 > => {
   try {
     const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/homeproducts`);
     const json = res.data;
-    
+
     const categories = json.data.map((cat: any) => {
       const products: SliderProduct[] = cat.homeProductItems.map((p: any) => ({
         id: p.pid,
-        categoryId: cat.name, 
+        categoryId: String(cat.categoryId ?? cat.name), // ensure string
         title: p.productName,
-        subtitle: p.productSlag,
-        slag: p.productSlag,
+        subtitle: p.productCode ?? p.productSlag ?? "",
+        slag: p.productSlag ?? "", // must exist
         price: p.dp,
-        img: p.defaultImage.startsWith("http")
+        img: p.defaultImage?.startsWith("http")
           ? p.defaultImage
           : `${API_BASE_URL}${p.defaultImage}`,
         deliveryTime: "2-3 Days",
       }));
 
       return {
-        slug: cat.name.toLowerCase().replace(/\s+/g, "-"), // create slug from name
+        slug: cat.name.toLowerCase().replace(/\s+/g, "-"),
         name: cat.name,
         products,
       };
     });
 
-    console.log("categories responsesdsds ✅", categories);
     return categories;
   } catch (error) {
     console.error("Error fetching categories:", error);
     return [];
   }
 };
+
 
 // ✅ Get products by category slug from slider
 export const getProductsByCategory = async (

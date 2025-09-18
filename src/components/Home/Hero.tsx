@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Slider from "react-slick";
+import Slider, { Settings } from "react-slick";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getActiveBanners, Banner } from "@/lib/actions/action";
@@ -19,8 +19,8 @@ export default function Hero() {
     fetchBanners();
   }, []);
 
-  // ✅ Slick slider settings
-  const settings = {
+  // Slick slider settings
+  const settings: Settings = {
     dots: true,
     infinite: true,
     autoplay: true,
@@ -31,14 +31,14 @@ export default function Hero() {
     arrows: false,
   };
 
-
-  const getBannerLink = (banner: Banner) => {
+  // Ensure href always returns a string
+  const getBannerLink = (banner: Banner): string => {
     if (banner.categoryId && banner.productId > 0) {
       return `/${banner.categoryId}`;
-    }
-    else if (banner.categoryId> 0) {
+    } else if (banner.categoryId > 0) {
       return `/${banner.categoryId}`;
     }
+    return "/"; // fallback URL
   };
 
   return (
@@ -52,8 +52,8 @@ export default function Hero() {
             >
               {/* Background Image */}
               <Image
-                src={banner.imgUrl}
-                alt={banner.imgName}
+                src={banner.imgUrl || "/image/bread.png"} // fallback image
+                alt={banner.imgName || "Banner"}
                 fill
                 className="object-cover"
               />
@@ -61,15 +61,15 @@ export default function Hero() {
               <CardContent className="absolute inset-0 bg-black/40 flex justify-between items-center text-white p-6 md:p-8 z-10">
                 <div>
                   <h2 className="text-xl md:text-3xl font-bold">
-                    {banner.imgName}
+                    {banner.imgName || "Banner"}
                   </h2>
                   <p className="mt-1 md:mt-2 text-sm md:text-lg">
-                    {banner.bannerTypeName !== "NULL"
+                    {banner.bannerTypeName && banner.bannerTypeName !== "NULL"
                       ? banner.bannerTypeName
                       : "Explore now"}
                   </p>
 
-                  {/* ✅ Dynamic Shop Now Button */}
+                  {/* Dynamic Shop Now Button */}
                   <Link href={getBannerLink(banner)}>
                     <Button className="mt-3 bg-white text-green-600 font-semibold">
                       Shop Now

@@ -2,19 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { notFound, useParams } from "next/navigation";
-import ProductInfo, { ProductDetails } from "@/components/Home/ProductInfo";
+import ProductInfo from "@/components/Home/ProductInfo";
 import ProductImageGallery from "@/components/Home/ProductImageGallery";
 import ProductCard, { UIProductCard } from "@/components/Home/ProductCard";
 import ProductCardSkeleton from "@/components/Loaders/ProductCardSkeleton";
 import ProductImageGallerySkeleton from "@/components/Loaders/ProductImageGallerySkeleton";
 import ProductInfoSkeleton from "@/components/Loaders/ProductInfoSkeleton";
-
-import {
-  getProductDetails,
-  getProductsBySlug,
-  getCategoryById,
-} from "@/lib/actions/action";
-
+import {ProductDetails,getProductDetails, getProductsBySlug, getCategoryById } from "@/lib/actions/action";
 import { API_BASE_URL } from "@/utils/api";
 
 export default function ProductDetailsPage() {
@@ -32,15 +26,18 @@ export default function ProductDetailsPage() {
       try {
         setLoading(true);
 
+        // ✅ get product details
         const prodRes = await getProductDetails(slag);
         if (!prodRes?.data) return notFound();
-        setProduct(prodRes.data as ProductDetails);
+        setProduct(prodRes.data); // prodRes.data matches Product interface
 
+        // ✅ get related category
         const relatedCategory = await getCategoryById(Number(categoriesById));
         if (relatedCategory?.data?.slagurl) {
           const slug = relatedCategory.data.slagurl;
-          const prodRes2 = await getProductsBySlug(slug);
 
+          // ✅ get products by category slug
+          const prodRes2 = await getProductsBySlug(slug);
           if (prodRes2?.data?.items) {
             const mapped: UIProductCard[] = prodRes2.data.items.map(
               (p: any): UIProductCard => ({
@@ -67,24 +64,24 @@ export default function ProductDetailsPage() {
     fetchData();
   }, [slag, categoriesById]);
 
-  
-if (loading)
-  return (
-    <main className="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-      <ProductImageGallerySkeleton />
-
-      <ProductInfoSkeleton />
-
-      <div className="col-span-1 md:col-span-2 mt-12">
-        <div className="w-1/3 h-6 mb-6 bg-gray-200 rounded animate-pulse"></div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
+  // ✅ Skeleton loader while fetching
+  if (loading)
+    return (
+      <main className="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ProductImageGallerySkeleton />
+        <ProductInfoSkeleton />
+        <div className="col-span-1 md:col-span-2 mt-12">
+          <div className="w-1/3 h-6 mb-6 bg-gray-200 rounded animate-pulse"></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
-      </div>
-    </main>
-  );
+      </main>
+    );
+
+  // ✅ if no product found
   if (!product) return notFound();
 
   return (
@@ -102,7 +99,9 @@ if (loading)
         alt={product.productName || "Product"}
         fallbackImage="/image/bread.png"
       />
+
       <ProductInfo product={product} />
+
       {products.length > 0 && (
         <div className="col-span-1 md:col-span-2 mt-12">
           <h2 className="text-lg font-bold mb-6">Related Products</h2>

@@ -74,7 +74,9 @@ export default function SignUpOtpStep({ resendDuration = 30 }: SignUpOtpStepProp
         {otp.map((digit, idx) => (
           <Input
             key={idx}
-            ref={(el) => (inputsRef.current[idx] = el)}
+            ref={(el) => {
+              inputsRef.current[idx] = el;
+            }}
             type="text"
             inputMode="numeric"
             maxLength={1}

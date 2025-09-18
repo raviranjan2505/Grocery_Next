@@ -76,7 +76,7 @@ export default function AccountMenuMobile() {
               {/* Account Info */}
               <div className="p-4 border-b">
                 <p className="text-lg font-medium">
-                  {user?.phone || user?.email || "7042472287"}
+                  7042472287
                 </p>
               </div>
 

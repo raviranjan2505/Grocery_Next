@@ -13,7 +13,7 @@ type User = {
 type Step = "mobile" | "otp"
 
 type LoginStore = {
-  user: User | null
+  user?: User | null
   token: string | null
   isLoading: boolean
   error: string | null

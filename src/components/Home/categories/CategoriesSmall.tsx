@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCategories, CategoryResponse } from "@/lib/actions/action";
-import CategorySkeleton from "@/components/loaders/CategorySkeleton";
+import CategorySkeleton from "@/components/Loaders/CategorySkeleton";
 
 interface Category {
   id: number;

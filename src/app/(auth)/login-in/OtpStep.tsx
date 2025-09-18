@@ -74,7 +74,9 @@ export default function OtpStep({ resendDuration = 30 }: OtpStepProps) {
         {otp.map((digit, idx) => (
           <Input
             key={idx}
-            ref={(el) => (inputsRef.current[idx] = el)}
+            ref={(el) => {
+              inputsRef.current[idx] = el;
+            }}
             type="text"
             inputMode="numeric"
             maxLength={1}
