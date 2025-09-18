@@ -4,8 +4,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import useCart from "@/app/store/useCart"
 import LoginDialog from "@/app/(auth)/login-in/LoginDialog"
 import { useLoginStore } from "@/app/store/useLoginStore"
 import { useSignupStore } from "@/app/store/useSignupStore"

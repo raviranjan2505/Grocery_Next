@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { getCategories, CategoryResponse } from "@/lib/actions/action";
+import { getCategories} from "@/lib/actions/action";
 import CategoriesMainSkeleton from "@/components/Loaders/CategoriesMainSkeleton";
 
 interface Category {

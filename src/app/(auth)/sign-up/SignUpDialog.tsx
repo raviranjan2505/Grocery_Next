@@ -20,7 +20,6 @@ interface SignUpDialogProps {
 
 export default function SignUpDialog({ open, onOpenChange }: SignUpDialogProps) {
   const step = useSignupStore((s) => s.step)
-  const user = useSignupStore((s) => s.user)
   const error = useSignupStore((s) => s.error)
 const successMessage = useSignupStore((s) => s.successMessage)
   const setSuccessMessage = useSignupStore((s) => s.setSuccessMessage)

@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { getCategoryById, getProductsBySlug } from "@/lib/actions/action";
 import ProductCard, { UIProductCard } from "@/components/Home/ProductCard";
 import SkeletonLoader from "@/components/Loaders/SkeletonLoader";
 import { API_BASE_URL } from "@/utils/api";
+import React from 'react';
+import { use } from 'react'; // Import use hook
 
 interface CategoryPageProps {
-  params: {
-    categoriesById: string;
-  };
+  params: Promise<{ categoriesById: string }>;
 }
 
 interface CategoryNode {
@@ -22,9 +21,9 @@ interface CategoryNode {
 }
 
 export default function CategoryWithProducts({ params }: CategoryPageProps) {
-  const { categoriesById } = params;
+const unwrappedParams = use(params);
+const { categoriesById } = unwrappedParams;
   const [subcategories, setSubcategories] = useState<CategoryNode[]>([]);
-  const [activeSlug, setActiveSlug] = useState<string>(""); 
   const [products, setProducts] = useState<UIProductCard[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {
@@ -36,7 +35,7 @@ export default function CategoryWithProducts({ params }: CategoryPageProps) {
 
       if (catRes?.data) {
         const parentSlug = catRes.data.slagurl;
-        setActiveSlug(parentSlug);
+ 
 
         if (catRes.data.subcategories?.length > 0) {
           setSubcategories(catRes.data.subcategories);

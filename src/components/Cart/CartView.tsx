@@ -13,7 +13,6 @@ interface CartViewProps {
 export default function CartView({ token, onLoginRequired, onProceed }: CartViewProps) {
   const { cartItems, increaseQuantity, decreaseQuantity, removeItem } = useCart()
 
-  const totalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0)
   const totalPrice = cartItems.reduce(
     (sum, i) => sum + i.quantity * i.item.price,
     0
