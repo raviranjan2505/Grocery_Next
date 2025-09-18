@@ -86,13 +86,13 @@ const { categoriesById } = unwrappedParams;
   return (
     <div className="flex">
       {/* LEFT: Sticky Sidebar */}
-      <aside className="w-40 border-r bg-white h-screen sticky top-0 overflow-y-auto">
+      <aside className="w-20 md:w-40 border-r bg-white h-screen sticky top-0 overflow-y-auto">
         {subcategories.map((sub) => (
           <button
             key={sub.categoryId}
             className="flex items-center gap-3 w-full px-4 py-2 hover:bg-gray-100 transition"
           >
-            <div className="w-7 h-7 bg-gray-200 rounded-md" />
+            <div className="w-7 h-7 bg-gray-200 rounded-md hidden md:block" />
             <span>{sub.categoryName}</span>
           </button>
         ))}

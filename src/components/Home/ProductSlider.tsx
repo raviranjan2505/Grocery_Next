@@ -1,4 +1,5 @@
 "use client";
+
 import Slider from "react-slick";
 import ProductCard, { UIProductCard } from "@/components/Home/ProductCard";
 import { useEffect, useRef } from "react";
@@ -10,18 +11,16 @@ export interface SliderProduct {
   categoryId: string;
   title: string;
   subtitle: string;
-  slag:string;
+  slag: string;
   price: number;
   img: string;
   deliveryTime?: string;
 }
 
-
 interface ProductSliderProps {
   title: string;
   products: SliderProduct[];
 }
-
 
 export default function ProductSlider({ title, products }: ProductSliderProps) {
   const sliderRef = useRef<Slider>(null);
@@ -30,24 +29,27 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
     dots: false,
     infinite: false,
     speed: 500,
-    slidesToShow: 6,
-    slidesToScroll: 2,
+    slidesToScroll: 1,
+    arrows: false,
+    variableWidth: true, // ✅ manual width control
     responsive: [
-      { breakpoint: 1280, settings: { slidesToShow: 5 } },
-      { breakpoint: 1024, settings: { slidesToShow: 4 } },
-      { breakpoint: 768, settings: { slidesToShow: 3 } },
-      { breakpoint: 480, settings: { slidesToShow: 2 } },
+      { breakpoint: 1280, settings: { slidesToScroll: 1 } },
+      { breakpoint: 1024, settings: { slidesToScroll: 1 } },
+      { breakpoint: 768, settings: { slidesToScroll: 1 } },
+      { breakpoint: 480, settings: { slidesToScroll: 1 } },
     ],
   };
 
-  
   useEffect(() => {
-    sliderRef.current?.slickGoTo(0);
-    window.dispatchEvent(new Event("resize"));
+    const timer = setTimeout(() => {
+      sliderRef.current?.slickGoTo(0);
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
+    return () => clearTimeout(timer);
   }, [products]);
 
   return (
-    <section className="px-4 md:px-6 py-6">
+    <section className="w-full px-4 md:px-6 py-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg md:text-xl font-semibold">{title}</h2>
         <button className="text-green-600 text-sm font-medium">See All</button>
@@ -61,20 +63,28 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
               categoryId: p.categoryId,
               title: p.title,
               subtitle: p.subtitle,
-              slag:p.slag,
+              slag: p.slag,
               price: p.price,
               img: p.img,
               deliveryTime: p.deliveryTime,
             };
+
             return (
-              <div key={`${p.categoryId}-${p.id}`} className="px-2">
+              <div
+                key={`${p.categoryId}-${p.id}`}
+                className="px-2"
+                style={{
+                  width: "160px", // ✅ consistent width
+                  maxWidth: "200px",
+                }}
+              >
                 <ProductCard product={cardData} />
               </div>
             );
           })}
         </Slider>
       ) : (
-        <p>No products found</p>
+        <p className="text-gray-500">No products found</p>
       )}
     </section>
   );

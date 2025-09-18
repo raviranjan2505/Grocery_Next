@@ -134,3 +134,7 @@
 }
 
 
+.slick-slide > div {
+  min-width: 160px !important; /* prevent collapse */
+  display: flex; /* so ProductCard stretches nicely */
+}
