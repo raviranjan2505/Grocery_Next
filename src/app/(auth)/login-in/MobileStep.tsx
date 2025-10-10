@@ -6,15 +6,13 @@ import { useLoginStore } from "@/app/store/useLoginStore"
 
 export default function MobileStep() {
   const mobile = useLoginStore((s) => s.mobile)
+  const setMobile = useLoginStore((s) => s.setMobile)
+  const sendOtp = useLoginStore((s) => s.sendOtp)
   const isLoading = useLoginStore((s) => s.isLoading)
   const error = useLoginStore((s) => s.error)
-  const sendOtp = useLoginStore((s) => s.sendOtp)
-  const setMobile = useLoginStore((s) => s.setMobile)
 
   const handleContinue = () => {
-    if (mobile.length === 10) {
-      sendOtp(mobile)
-    }
+    if (mobile.length === 10) sendOtp(mobile)
   }
 
   return (
@@ -24,9 +22,7 @@ export default function MobileStep() {
         <Input
           type="tel"
           value={mobile}
-          onChange={(e) =>
-            setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))
-          }
+          onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
           placeholder="Enter mobile number"
           className="flex-1 border-0 focus-visible:ring-0"
           maxLength={10}

@@ -50,7 +50,7 @@ const Categories = () => {
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
           : categories.map((cat) => (
-              <Link key={cat.id} href={`/${cat.id}`}>
+              <Link key={cat.id} href={`products/${cat.id}`}>
                 <Card className="cursor-pointer hover:shadow-md transition rounded-xl">
                   <CardContent className="p-2 flex flex-col items-center">
                     <Image

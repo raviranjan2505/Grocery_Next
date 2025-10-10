@@ -13,9 +13,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { useLoginStore } from "@/app/store/useLoginStore"
 import { useSignupStore } from "@/app/store/useSignupStore"
+import { Package, Gift, MapPin,  Shield } from "lucide-react";
+import { useRouter } from "next/navigation"
 
 export default function AccountMenu() {
   // ✅ Get user from either store
+   const router = useRouter()
   const loginUser = useLoginStore((s) => s.user)
   const signupUser = useSignupStore((s) => s.user)
   const user = loginUser || signupUser
@@ -26,7 +29,16 @@ export default function AccountMenu() {
   const logout = async () => {
     await loginLogout()
     await signupLogout()
+    router.push("/") // ✅ redirect to home
   }
+
+   const menuItems = [
+    { href: "/account/addresses", icon: MapPin, label: "My Addresses" },
+    { href: "/account/orders", icon: Package, label: "My Orders" },
+    { href: "/account/gift-cards", icon: Gift, label: "E-Gift Cards" },
+    { href: "/account/privacy", icon: Shield, label: "Account Privacy" },
+  ];
+  
 
   return (
     <DropdownMenu>
@@ -44,21 +56,12 @@ export default function AccountMenu() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem asChild>
-          <Link href="/orders" className="w-full">My Orders</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/addresses" className="w-full">Saved Addresses</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/gift-cards" className="w-full">E-Gift Cards</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/faqs" className="w-full">FAQ&apos;s</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/privacy" className="w-full">Account Privacy</Link>
-        </DropdownMenuItem>
+        {menuItems.map((item) => (
+          
+              <DropdownMenuItem asChild key={item.href}>
+                <Link href={item.href}>{item.label}</Link>
+              </DropdownMenuItem>
+            ))}
 
         <DropdownMenuSeparator />
 
@@ -90,3 +93,9 @@ export default function AccountMenu() {
     </DropdownMenu>
   )
 }
+
+
+
+
+
+           

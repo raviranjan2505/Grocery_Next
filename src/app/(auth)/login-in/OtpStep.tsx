@@ -6,7 +6,7 @@ import { useLoginStore } from "@/app/store/useLoginStore"
 import { useRef, useState, useEffect } from "react"
 
 interface OtpStepProps {
-  resendDuration?: number // default 30s if not provided
+  resendDuration?: number
 }
 
 export default function OtpStep({ resendDuration = 30 }: OtpStepProps) {
@@ -21,50 +21,46 @@ export default function OtpStep({ resendDuration = 30 }: OtpStepProps) {
 
   const inputsRef = useRef<Array<HTMLInputElement | null>>([])
 
-  // 🔹 Timer uses configurable duration
   const [counter, setCounter] = useState(resendDuration)
 
   useEffect(() => {
     if (counter > 0) {
-      const timer = setInterval(() => setCounter((c) => c - 1), 1000)
-      return () => clearInterval(timer)
+      const timer = setTimeout(() => setCounter(counter - 1), 1000)
+      return () => clearTimeout(timer)
     }
   }, [counter])
+
+  useEffect(() => {
+    inputsRef.current[0]?.focus()
+  }, [])
 
   const handleOtpChange = (val: string, idx: number) => {
     if (/^\d?$/.test(val)) {
       const newOtp = [...otp]
       newOtp[idx] = val
       setOtp(newOtp)
-
-      if (val && idx < 5) {
-        inputsRef.current[idx + 1]?.focus()
-      }
+      if (val && idx < 5) inputsRef.current[idx + 1]?.focus()
     }
   }
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    idx: number
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
     if (e.key === "Backspace" && !otp[idx] && idx > 0) {
       inputsRef.current[idx - 1]?.focus()
     }
   }
 
   const handleVerifyOtp = () => {
-    const code = otp.join("")
-    if (code.length === 6) {
-      verifyOtp(mobile, code)
+    if (otp.every((d) => d)) {
+      verifyOtp(mobile, otp)
     }
   }
 
   const handleResendOtp = async () => {
     const success = await sendOtp(mobile)
     if (success) {
-      setOtp(Array(6).fill("")) // clear OTP inputs
-      setCounter(resendDuration) // reset timer to prop value
-      inputsRef.current[0]?.focus() // focus first input
+      setOtp(Array(6).fill(""))
+      setCounter(resendDuration)
+      inputsRef.current[0]?.focus()
     }
   }
 
@@ -74,9 +70,7 @@ export default function OtpStep({ resendDuration = 30 }: OtpStepProps) {
         {otp.map((digit, idx) => (
           <Input
             key={idx}
-            ref={(el) => {
-              inputsRef.current[idx] = el;
-            }}
+            ref={(el) => {(inputsRef.current[idx] = el)}}
             type="text"
             inputMode="numeric"
             maxLength={1}
@@ -91,23 +85,18 @@ export default function OtpStep({ resendDuration = 30 }: OtpStepProps) {
       <Button
         className="bg-green-600 hover:bg-green-700 text-white"
         onClick={handleVerifyOtp}
-        disabled={otp.join("").length !== 6 || isLoading}
+        disabled={otp.some((d) => !d) || isLoading}
       >
         {isLoading ? "Verifying..." : "Verify OTP"}
       </Button>
 
-      {/* 🔹 Resend OTP button with configurable timer */}
       <div className="text-center">
         {counter > 0 ? (
           <p className="text-sm text-gray-500">
             Resend OTP in <span className="font-semibold">{counter}</span>s
           </p>
         ) : (
-          <Button
-            variant="link"
-            className="text-sm text-green-600"
-            onClick={handleResendOtp}
-          >
+          <Button variant="link" className="text-sm text-green-600" onClick={handleResendOtp}>
             Resend OTP
           </Button>
         )}
@@ -115,11 +104,7 @@ export default function OtpStep({ resendDuration = 30 }: OtpStepProps) {
 
       {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
-      <Button
-        variant="ghost"
-        className="text-sm text-gray-500"
-        onClick={() => setStep("mobile")}
-      >
+      <Button variant="ghost" className="text-sm text-gray-500" onClick={() => setStep("mobile")}>
         ← Change Number
       </Button>
     </div>

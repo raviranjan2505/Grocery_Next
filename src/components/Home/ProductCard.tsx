@@ -28,7 +28,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-3 hover:shadow-lg transition duration-200 h-full flex flex-col justify-between border border-gray-300">
       {/* Product Image */}
-      <Link href={`/${product.categoryId}/${product.slag}`} className="block">
+      <Link href={`/products/${product.categoryId}/${product.slag}`} className="block">
         <div className="relative w-full h-36 md:h-40 lg:h-44 mb-2">
           <Image
             src={product.img || "/fallback.png"}

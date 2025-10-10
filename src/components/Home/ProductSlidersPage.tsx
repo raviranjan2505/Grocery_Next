@@ -8,10 +8,10 @@ import ProductSliderSkeleton from "../Loaders/ProductSliderSkeleton";
 
 export default function ProductSlidersPage() {
   const [categories, setCategories] = useState<
-    { slug: string; name: string; products: SliderProduct[] }[]
+    { slug: string; name: string; categorySlagUrl:string; products: SliderProduct[] }[]
   >([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     async function fetchData() {
       try {
@@ -44,6 +44,7 @@ export default function ProductSlidersPage() {
         <ProductSlider
           key={cat.slug}
           title={cat.name}
+          categorySlagUrl ={cat.categorySlagUrl}
           products={cat.products}
         />
       ))}

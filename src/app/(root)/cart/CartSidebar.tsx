@@ -9,6 +9,7 @@ import { useLoginStore } from "@/app/store/useLoginStore"
 import { useSignupStore } from "@/app/store/useSignupStore"
 import CartView from "@/components/Cart/CartView"
 import AddressView from "@/components/Cart/AddressView"
+import useAddressStore from "@/app/store/useAddressStore"
 
 interface CartSidebarProps {
   open: boolean
@@ -16,22 +17,27 @@ interface CartSidebarProps {
 }
 
 export default function CartSidebar({ open, onClose }: CartSidebarProps) {
+
   const loginToken = useLoginStore((s) => s.token)
   const signupToken = useSignupStore((s) => s.token)
   const token = loginToken || signupToken
 
   const [loginOpen, setLoginOpen] = useState(false)
   const [step, setStep] = useState<"cart" | "address">("cart")
+  const { selectedAddress, setSelectedAddress } = useAddressStore()
 
   const goToAddress = () => setStep("address")
   const goToCart = () => setStep("cart")
+
+  const handleChangeAddress = () => {
+    setStep("address") 
+  }
 
   return (
     <>
       <AnimatePresence>
         {open && (
           <>
-            {/* Overlay */}
             <motion.div
               className="fixed inset-0 bg-black bg-opacity-40 z-40"
               initial={{ opacity: 0 }}
@@ -65,9 +71,14 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                     token={token}
                     onLoginRequired={() => setLoginOpen(true)}
                     onProceed={goToAddress}
+                    selectedAddress={selectedAddress}
+                    onChangeAddress={handleChangeAddress} 
                   />
                 ) : (
-                  <AddressView onBack={goToCart} />
+                  <AddressView 
+                  onBack={goToCart} 
+                  onSelectAddress={setSelectedAddress}
+                   />
                 )}
               </div>
             </motion.div>

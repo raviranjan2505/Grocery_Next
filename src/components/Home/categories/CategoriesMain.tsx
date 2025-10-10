@@ -54,7 +54,7 @@ export default function CategoriesMain() {
       {loading
         ? Array.from({ length: 3 }).map((_, i) => <CategoriesMainSkeleton key={i} />) // ✅ use skeleton
         : categories.map((cat) => (
-            <Link key={cat.id} href={`/${cat.id}`}>
+            <Link key={cat.id} href={`products/${cat.id}`}>
               <Card
                 className={`rounded-2xl shadow-md p-4 flex flex-col justify-between cursor-pointer hover:shadow-lg transition ${cat.bg}`}
               >

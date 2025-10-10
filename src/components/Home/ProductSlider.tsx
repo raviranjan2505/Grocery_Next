@@ -5,6 +5,7 @@ import ProductCard, { UIProductCard } from "@/components/Home/ProductCard";
 import { useEffect, useRef } from "react";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import Link from "next/link";
 
 export interface SliderProduct {
   id: number | string;
@@ -19,10 +20,11 @@ export interface SliderProduct {
 
 interface ProductSliderProps {
   title: string;
+  categorySlagUrl:string;
   products: SliderProduct[];
 }
 
-export default function ProductSlider({ title, products }: ProductSliderProps) {
+export default function ProductSlider({ title,categorySlagUrl, products }: ProductSliderProps) {
   const sliderRef = useRef<Slider>(null);
 
   const settings = {
@@ -52,7 +54,7 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
     <section className="w-full px-4 md:px-6 py-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg md:text-xl font-semibold">{title}</h2>
-        <button className="text-green-600 text-sm font-medium">See All</button>
+        <Link href={`/products/catSlug/${categorySlagUrl}`} className="text-green-600 text-sm font-medium">See All</Link>
       </div>
 
       {products.length > 0 ? (
@@ -68,6 +70,7 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
               img: p.img,
               deliveryTime: p.deliveryTime,
             };
+           
 
             return (
               <div

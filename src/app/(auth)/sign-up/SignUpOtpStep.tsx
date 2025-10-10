@@ -52,10 +52,9 @@ export default function SignUpOtpStep({ resendDuration = 30 }: SignUpOtpStepProp
     }
   }
 
-  const handleVerifyOtp = () => {
-    const code = otp.join("")
-    if (code.length === 6) {
-      verifyOtp(mobile, code)
+ const handleVerifyOtp = () => {
+    if (otp.every((d) => d)) {
+      verifyOtp(mobile, otp)
     }
   }
 

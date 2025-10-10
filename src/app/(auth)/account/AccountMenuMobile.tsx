@@ -6,22 +6,33 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLoginStore } from "@/app/store/useLoginStore"
 import { useSignupStore } from "@/app/store/useSignupStore"
+import { Package, Gift, MapPin, Shield } from "lucide-react";
+import { useRouter } from "next/navigation"
 
 export default function AccountMenuMobile() {
   // ✅ Get user from either store
   const loginUser = useLoginStore((s) => s.user)
   const signupUser = useSignupStore((s) => s.user)
   const user = loginUser || signupUser
+   const router = useRouter() // ✅ for redirecting
 
   // ✅ Logout clears both stores
   const loginLogout = useLoginStore((s) => s.logout)
   const signupLogout = useSignupStore((s) => s.logout)
-  const logout = async () => {
+
+    const logout = async () => {
     await loginLogout()
     await signupLogout()
+    router.push("/") // ✅ redirect to home
   }
-
   const [open, setOpen] = useState(false)
+  const menuItems = [
+      { href: "/account/addresses", icon: MapPin, label: "My Addresses" },
+      { href: "/account/orders", icon: Package, label: "My Orders" },
+      { href: "/account/gift-cards", icon: Gift, label: "E-Gift Cards" },
+      { href: "/account/privacy", icon: Shield, label: "Account Privacy" },
+    ];
+    
 
   return (
     <>
@@ -82,21 +93,12 @@ export default function AccountMenuMobile() {
 
               {/* Menu Links */}
               <div className="p-4 space-y-3 flex-1 overflow-y-auto">
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link href="/orders">Order History</Link>
+                 {menuItems.map((item) => (
+                <Button key={item.href} variant="ghost" className="w-full justify-start" asChild>
+                  <Link href={item.href}  onClick={() => setOpen(false)} >{item.label}</Link>
                 </Button>
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link href="/addresses">Address Book</Link>
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link href="/wallet">Wallet Details</Link>
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link href="/gift-cards">E-Gift Cards</Link>
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link href="/privacy">Account Privacy</Link>
-                </Button>
+              ))}
+               
 
                 <Button
                   variant="ghost"

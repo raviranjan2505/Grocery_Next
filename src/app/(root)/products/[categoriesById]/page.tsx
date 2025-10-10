@@ -1,0 +1,157 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  getCategoryById,
+  getProductsBySlug,
+  getProductsBySubCategoriesSlug,
+} from "@/lib/actions/action";
+import ProductCard, { UIProductCard } from "@/components/Home/ProductCard";
+import SkeletonLoader from "@/components/Loaders/SkeletonLoader";
+import { API_BASE_URL } from "@/utils/api";
+import React from "react";
+import { use } from "react"; 
+
+interface CategoryPageProps {
+  params: Promise<{ categoriesById: string }>;
+}
+
+interface CategoryNode {
+  categoryId: number;
+  categoryName: string;
+  slagurl: string;
+  thumbnail?: string;
+  subcategories: CategoryNode[];
+}
+
+export default function CategoryWithProducts({ params }: CategoryPageProps) {
+  const unwrappedParams = use(params);
+  const { categoriesById } = unwrappedParams;
+
+  const [subcategories, setSubcategories] = useState<CategoryNode[]>([]);
+  const [products, setProducts] = useState<UIProductCard[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [parentSlug, setParentSlug] = useState<string>("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const catRes = await getCategoryById(Number(categoriesById));
+
+        if (catRes?.data) {
+          const parentSlugFromApi = catRes.data.slagurl;
+          setParentSlug(parentSlugFromApi);
+
+          if (catRes.data.subcategories?.length > 0) {
+            setSubcategories(catRes.data.subcategories);
+          }
+
+          // default products (parent category)
+          if (parentSlugFromApi) {
+            const prodRes = await getProductsBySlug(parentSlugFromApi);
+            if (prodRes?.data?.items) {
+              const mapped = prodRes.data.items.map(
+                (p: any): UIProductCard => ({
+                  id: String(p.productId),
+                  categoryId: p.categoryId,
+                  title: p.productName,
+                  subtitle: p.productCode,
+                  price: p.dp,
+                  slag: p.slagurl,
+                  img: p.defaultImage.startsWith("http")
+                    ? p.defaultImage
+                    : `${API_BASE_URL}${p.defaultImage}`,
+                  deliveryTime: "16 MINS",
+                })
+              );
+              setProducts(mapped);
+            }
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [categoriesById]);
+
+  // ✅ load products by subcategory click
+  const handleSubcategoryClick = async (subcategorySlug: string) => {
+    try {
+      setLoading(true);
+      const prodRes = await getProductsBySubCategoriesSlug(
+        parentSlug,
+        subcategorySlug
+      );
+
+      if (prodRes?.data?.items) {
+        const mapped = prodRes.data.items.map(
+          (p: any): UIProductCard => ({
+            id: String(p.productId),
+            categoryId: p.categoryId,
+            title: p.productName,
+            subtitle: p.productCode,
+            price: p.dp,
+            slag: p.slagurl,
+            img: p.defaultImage.startsWith("http")
+              ? p.defaultImage
+              : `${API_BASE_URL}${p.defaultImage}`,
+            deliveryTime: "16 MINS",
+          })
+        );
+        setProducts(mapped);
+      } else {
+        setProducts([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex">
+        <aside className="w-52 border-r bg-white h-screen sticky top-0 overflow-y-auto">
+          <SkeletonLoader type="category" count={5} />
+        </aside>
+        <main className="flex-1 p-4 bg-gray-50">
+          <SkeletonLoader type="product" count={8} />
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex">
+      {/* LEFT: Sticky Sidebar */}
+      <aside className="w-20 md:w-40 border-r bg-white h-screen sticky top-0 overflow-y-auto">
+        {subcategories.map((sub) => (
+          <button
+            key={sub.categoryId}
+            onClick={() => handleSubcategoryClick(sub.slagurl)} // ✅ fetch by slug
+            className="flex items-center gap-3 w-full px-4 py-2 hover:bg-gray-100 transition"
+          >
+            <div className="w-7 h-7 bg-gray-200 rounded-md hidden md:block" />
+            <span>{sub.categoryName}</span>
+          </button>
+        ))}
+      </aside>
+
+      {/* RIGHT: Products Grid */}
+      <main className="flex-1 p-4 overflow-y-auto h-[calc(100vh-100px)] bg-gray-50">
+        {products.length === 0 ? (
+          <p className="text-gray-500">No products found</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
