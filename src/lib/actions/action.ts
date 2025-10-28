@@ -51,6 +51,36 @@ export const getProductDetails = async (
   }
 };
 
+export const getProductsBySearch = async (query: string): Promise<ProductDetails[]> => {
+  try {
+    const res = await axiosInstance.get(
+      `${API_ROUTES.PRODUCTS}/searchbytext?searchText=${encodeURIComponent(query)}`
+    );
+
+    const searchResults = res.data;
+    if (!Array.isArray(searchResults) || searchResults.length === 0) return [];
+
+    const detailedProducts = await Promise.all(
+      searchResults.map(async (item: any) => {
+        if (!item?.product_slagurl) return null;
+
+        const detailRes = await getProductDetails(item.product_slagurl);
+        if (!detailRes?.success || !detailRes.data) return null;
+
+        // Attach slug for ProductCard navigation
+        return {
+          ...detailRes.data,
+          product_slagurl: item.product_slagurl,
+        } as ProductDetails & { product_slagurl?: string };
+      })
+    );
+
+    return detailedProducts.filter((p): p is ProductDetails => !!p);
+  } catch (err) {
+    console.error("getProductsBySearch error:", err);
+    return [];
+  }
+};
 
 export interface SliderProduct {
   id: number;        

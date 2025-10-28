@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axiosInstance from "@/lib/axios";
 import { API_ROUTES } from "@/utils/api";
-import Cookies from "js-cookie"; // ✅ FIXED
+import Cookies from "js-cookie"; 
 
 type User = {
   id: string;
@@ -116,7 +116,7 @@ export const useSignupStore = create<SignupStore>()(
               token,
               step: "mobile",
               mobile: "",
-              otp: Array(6).fill(""), // ✅ reset as array
+              otp: Array(6).fill(""), 
               isLoading: false,
               successMessage: "OTP Verified ✅ Sign Up Successful 🎉",
               error: null,
@@ -159,7 +159,7 @@ export const useSignupStore = create<SignupStore>()(
     }),
     {
       name: "signup-storage",
-      partialize: (state) => ({ user: state.user, token: state.token }), // persist only user and token
+      partialize: (state) => ({ user: state.user, token: state.token }), 
     }
   )
 );

@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type OrderItem = {
   item: {
@@ -57,11 +58,13 @@ export default function OrderSummaryPage() {
           <div className="space-y-2">
             {summary.items.map(({ item, quantity }) => (
               <div key={item.id} className="flex items-center gap-3 border p-2 rounded">
-                <img
-                  src={item.img}
-                  alt={item.title}
-                  className="w-16 h-16 object-cover rounded"
-                />
+                
+                <Image
+  src={item.img}
+  alt={item.title}
+  className="w-16 h-16 object-cover rounded"
+/>
+               
                 <div className="flex-1">
                   <p className="font-medium">{item.title}</p>
                   <p className="text-sm text-gray-500">Qty: {quantity}</p>

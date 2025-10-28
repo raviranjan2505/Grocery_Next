@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { handleCheckoutAPI } from "@/lib/actions/action";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner"; 
+import Image from "next/image";
 
 export default function ProductPaymentDetails() {
   const { selectedAddress } = useAddressStore();
@@ -82,11 +83,13 @@ export default function ProductPaymentDetails() {
             className="flex items-center justify-between mb-2"
           >
             <div className="flex items-center gap-2">
-              <img
-                src={item.img}
-                alt={item.title}
-                className="w-12 h-12 object-cover rounded"
-              />
+              <Image
+  src={item.img}
+  alt={item.title}
+
+  className="w-12 h-12 object-cover rounded" 
+/>
+          
               <span className="text-sm">
                 {item.title} x {quantity}
               </span>

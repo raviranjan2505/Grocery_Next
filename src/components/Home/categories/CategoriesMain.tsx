@@ -46,7 +46,7 @@ export default function CategoriesMain() {
     };
 
     fetchCategories();
-  }, []);
+  }, );
 
   
   return (
