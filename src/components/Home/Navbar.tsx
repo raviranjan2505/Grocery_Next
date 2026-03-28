@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, User } from "lucide-react"
+import { Heart, ShoppingCart, User } from "lucide-react"
 import useCart from "@/app/store/useCart"
 import CartSidebar from "@/app/(root)/cart/CartSidebar"
+import WishlistSidebar from "@/app/(root)/wishlist/WishlistSidebar"
 import LoginDialog from "@/app/(auth)/login-in/LoginDialog"
 import SignUpDialog from "@/app/(auth)/sign-up/SignUpDialog"
 import AccountMenu from "@/app/(auth)/account/AccountMenu"
@@ -12,11 +13,14 @@ import AccountMenuMobile from "@/app/(auth)/account/AccountMenuMobile"
 import Link from "next/link"
 import clsx from "clsx"
 import AnimatedSearchInput from "./AnimatedSearchInput"
+import HeaderLocation from "./HeaderLocation"
 import { useLoginStore } from "@/app/store/useLoginStore"
 import { useSignupStore } from "@/app/store/useSignupStore"
+import { useWishlistStore } from "@/app/store/useWishlistStore"
 
 export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false)
+  const [wishlistOpen, setWishlistOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
 
@@ -33,6 +37,10 @@ export default function Navbar() {
   const signupUser = useSignupStore((s) => s.user)
   const user = loginUser || signupUser
 
+  const wishlistCount = useWishlistStore((s) => s.entries.length)
+  const fetchWishlistEntries = useWishlistStore((s) => s.fetchEntries)
+  const clearWishlist = useWishlistStore((s) => s.clear)
+
   // Close dialogs automatically when logged in
   useEffect(() => {
     if (user) {
@@ -40,6 +48,14 @@ export default function Navbar() {
       setSignUpOpen(false)
     }
   }, [user])
+
+  useEffect(() => {
+    if (token) {
+      fetchWishlistEntries()
+    } else {
+      clearWishlist()
+    }
+  }, [token, fetchWishlistEntries, clearWishlist])
 
   return (
     <header className="border-b shadow-sm sticky top-0 bg-white z-50">
@@ -49,12 +65,7 @@ export default function Navbar() {
           <Link href="/" className="text-2xl font-bold text-green-600 hidden md:block">
             NexusGrocery
           </Link>
-          <div className="ml-2 text-sm">
-            <p className="font-semibold">Delivery in 12 minutes</p>
-            <p className="text-gray-500 truncate w-40 md:w-auto">
-              2 Chhaprola sanday, market...
-            </p>
-          </div>
+          <HeaderLocation />
         </div>
 
         {/* Desktop Actions */}
@@ -69,6 +80,20 @@ export default function Navbar() {
               <Button variant="ghost" onClick={() => setSignUpOpen(true)}>SignUp</Button>
             </>
           )}
+
+          <button
+            type="button"
+            className="relative rounded-md border border-gray-200 p-2 hover:bg-gray-50"
+            onClick={() => setWishlistOpen(true)}
+            aria-label="Open wishlist"
+          >
+            <Heart className="h-5 w-5 text-gray-700" />
+            {token && wishlistCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center">
+                {wishlistCount}
+              </span>
+            )}
+          </button>
 
           <button
             className={clsx(
@@ -86,7 +111,21 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Account Button */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          <button
+            type="button"
+            className="relative rounded-md border border-gray-200 p-2 hover:bg-gray-50"
+            onClick={() => setWishlistOpen(true)}
+            aria-label="Open wishlist"
+          >
+            <Heart className="h-5 w-5 text-gray-700" />
+            {token && wishlistCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center">
+                {wishlistCount}
+              </span>
+            )}
+          </button>
+
           {token ? (
             <AccountMenuMobile />
           ) : (
@@ -120,6 +159,7 @@ export default function Navbar() {
 
       {/* Dialogs */}
       <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />
+      <WishlistSidebar open={wishlistOpen} onClose={() => setWishlistOpen(false)} />
       <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
       <SignUpDialog open={signUpOpen} onOpenChange={setSignUpOpen} />
     </header>

@@ -19,8 +19,9 @@ function CommonLayout({ children }: { children: React.ReactNode }) {
   // Remove cookieId if cart is empty
   useEffect(() => {
     if (cartItems.length === 0) {
-      localStorage.removeItem("cookieId");
-      console.log("cookieId removed because cart is empty");
+      // Don't remove cookieId for guest users - they might add items later
+      // localStorage.removeItem("cookieId");
+      // console.log("cookieId removed because cart is empty");
     } else {
       console.log("cookieId kept because cart has items");
     }

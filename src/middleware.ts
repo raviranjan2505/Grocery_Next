@@ -3,12 +3,13 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get("authToken")?.value;
-  const protectedRoutes = ["/account", "/checkout", "/cart"];
+  const refreshToken = req.cookies.get("refreshToken")?.value;
+  const protectedRoutes = ["/account", "/checkout"];
 
   if (protectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route))) {
-    if (!token) {
-      console.log("No token, redirecting to /");
-      return NextResponse.redirect(new URL("/", req.url));
+    if (!token && !refreshToken) {
+      console.log("No token, redirecting to /login-in");
+      return NextResponse.redirect(new URL("/login-in", req.url));
     }
   }
 
@@ -18,7 +19,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/account/:path*",
-    "/cart/:path*",
     "/checkout/:path*"
   ],
 };

@@ -1,7 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { saveOrUpdateCart, getCartItems, getCartTotal, CartTotal } from "@/lib/actions/action";
+import { saveOrUpdateCart, getCartItems, getCartTotal, increaseCartItem, decreaseCartItem } from "@/lib/actions/action";
+import type { CartTotal } from "@/lib/data";
+import Cookies from "js-cookie";
 
 export interface ProductType {
   id: string;
@@ -39,75 +41,77 @@ const useCart = create<CartStore>((set, get) => ({
   total: null,
   loading: false,
 
-  // ✅ Always hydrate cookieId from localStorage on mount
+  // ✅ Always hydrate cookieId from localStorage on mount, generate if not present
   initCookieId: () => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("cookieId");
-      if (stored && !get().cookieId) {
+      let stored = Cookies.get("cookieId") || localStorage.getItem("cookieId");
+      if (!stored || !/^-?\d+$/.test(stored)) {
+        // Negative ids avoid collisions with real user ids.
+        stored = String(-(1000000000 + Math.floor(Math.random() * 1000000000)));
+        Cookies.set("cookieId", stored, { path: "/" });
+        localStorage.setItem("cookieId", stored);
+      }
+      if (!get().cookieId) {
         set({ cookieId: stored });
       }
     }
   },
 
   fetchCart: async () => {
+    // Ensure cookieId is initialized
+    get().initCookieId();
     let cookieId = get().cookieId;
 
     if (!cookieId && typeof window !== "undefined") {
-      cookieId = localStorage.getItem("cookieId") || null;
+      cookieId = Cookies.get("cookieId") || localStorage.getItem("cookieId") || null;
       if (cookieId) set({ cookieId });
     }
     if (!cookieId) return;
 
     set({ loading: true });
-    const data = await getCartItems(cookieId);
+    const data = await getCartItems();
 
-    if (data) {
+    if (data?.success && data.data && data.data.items) {
       set({
-        cartItems: data.items.map(i => ({
+        cartItems: data.data.items.map(i => ({
           item: {
             id: i.productId,
-            title: i.productName,
-            price: parseFloat(i.dp),
-            img: i.picture?.thumbImageUrl
+            title: i.productName || i.name || "Product",
+            price: i.dp ? parseFloat(i.dp) : (i.price || 0),
+            img: i.image || ""
           },
           quantity: i.quantity
         })),
-        cookieId: data.cookieId,
         loading: false
       });
-      localStorage.setItem("cookieId", data.cookieId);
     } else {
       set({ loading: false });
     }
   },
 
   fetchTotal: async () => {
-    const cookieId = get().cookieId || localStorage.getItem("cookieId");
+    const cookieId = get().cookieId || Cookies.get("cookieId") || localStorage.getItem("cookieId");
     if (!cookieId) return;
 
-    const totalData = await getCartTotal(cookieId);
+    const totalData = await getCartTotal();
     if (totalData) set({ total: totalData });
   },
 
   addItem: async (item, quantity = 1) => {
-    const cookieId = get().cookieId || localStorage.getItem("cookieId") || undefined;
-
     set({ loading: true });
-    const data = await saveOrUpdateCart(item.id, quantity, "insert", cookieId);
+    const data = await saveOrUpdateCart(item.id, quantity, "insert");
 
-    if (data) {
-      localStorage.setItem("cookieId", data.cookieId);
+    if (data?.success && data.data) {
       set({
-        cartItems: data.items.map(i => ({
+        cartItems: data.data.items.map(i => ({
           item: {
             id: i.productId,
-            title: i.productName,
-            price: parseFloat(i.dp),
-            img: i.picture?.thumbImageUrl
+            title: i.productName || i.name || "Product",
+            price: i.dp ? parseFloat(i.dp) : (i.price || 0),
+            img: i.image || ""
           },
           quantity: i.quantity
         })),
-        cookieId: data.cookieId,
         loading: false
       });
       await get().fetchTotal();
@@ -115,24 +119,20 @@ const useCart = create<CartStore>((set, get) => ({
   },
 
   removeItem: async (id) => {
-    const cookieId = get().cookieId || localStorage.getItem("cookieId");
-    if (!cookieId) return;
-
     set({ loading: true });
-    const data = await saveOrUpdateCart(id, 0, "remove", cookieId);
+    const data = await saveOrUpdateCart(id, 0, "remove");
 
-    if (data) {
+    if (data?.success && data.data) {
       set({
-        cartItems: data.items.map(i => ({
+        cartItems: data.data.items.map(i => ({
           item: {
             id: i.productId,
-            title: i.productName,
-            price: parseFloat(i.dp),
-            img: i.picture?.thumbImageUrl
+            title: i.productName || i.name || "Product",
+            price: i.dp ? parseFloat(i.dp) : (i.price || 0),
+            img: i.image || ""
           },
           quantity: i.quantity
         })),
-        cookieId: data.cookieId,
         loading: false
       });
       await get().fetchTotal();
@@ -141,20 +141,21 @@ const useCart = create<CartStore>((set, get) => ({
 
   increaseQuantity: async (id) => {
     const item = get().cartItems.find(ci => ci.item.id === id);
-    const cookieId = get().cookieId || localStorage.getItem("cookieId");
-    if (!item || !cookieId) return;
+    if (!item) return;
 
-    const newQty = item.quantity + 1;
-    const data = await saveOrUpdateCart(item.item.id, newQty, "insert", cookieId);
+    const data = await increaseCartItem(item.item.id, 1);
 
-    if (data) {
-      localStorage.setItem("cookieId", data.cookieId);
+    if (data?.success && data.data) {
       set({
-        cartItems: data.items.map(i => ({
-          item: { id: i.productId, title: i.productName, price: parseFloat(i.dp), img: i.picture?.thumbImageUrl },
+        cartItems: data.data.items.map(i => ({
+          item: { 
+            id: i.productId, 
+            title: i.productName || i.name || "Product", 
+            price: i.dp ? parseFloat(i.dp) : (i.price || 0), 
+            img: i.image || "" 
+          },
           quantity: i.quantity
-        })),
-        cookieId: data.cookieId
+        }))
       });
       await get().fetchTotal();
     }
@@ -162,25 +163,21 @@ const useCart = create<CartStore>((set, get) => ({
 
   decreaseQuantity: async (id) => {
     const item = get().cartItems.find(ci => ci.item.id === id);
-    const cookieId = get().cookieId || localStorage.getItem("cookieId");
-    if (!item || !cookieId) return;
+    if (!item) return;
 
-    const newQty = item.quantity - 1;
+    const data = await decreaseCartItem(item.item.id, 1);
 
-    if (newQty <= 0) {
-      await get().removeItem(id);
-      return;
-    }
-
-    const data = await saveOrUpdateCart(item.item.id, newQty, "insert", cookieId);
-
-    if (data) {
+    if (data?.success && data.data) {
       set({
-        cartItems: data.items.map(i => ({
-          item: { id: i.productId, title: i.productName, price: parseFloat(i.dp), img: i.picture?.thumbImageUrl },
+        cartItems: data.data.items.map(i => ({
+          item: { 
+            id: i.productId, 
+            title: i.productName || i.name || "Product", 
+            price: i.dp ? parseFloat(i.dp) : (i.price || 0), 
+            img: i.image || "" 
+          },
           quantity: i.quantity
-        })),
-        cookieId: data.cookieId
+        }))
       });
       await get().fetchTotal();
     }
@@ -195,6 +192,7 @@ const useCart = create<CartStore>((set, get) => ({
   // ✅ Clear cookieId from state and localStorage
   set({ cookieId: null, total: null, cartItems: [] });
   if (typeof window !== "undefined") {
+    Cookies.remove("cookieId");
     localStorage.removeItem("cookieId");
   }
 },

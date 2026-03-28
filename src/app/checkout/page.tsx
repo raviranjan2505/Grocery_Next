@@ -9,7 +9,6 @@ import { useSignupStore } from "@/app/store/useSignupStore";
 
 export default function CheckOutPage() {
   const router = useRouter();
-
   // Cart store
   const { cartItems, loading, fetchCart } = useCart();
 
@@ -17,6 +16,7 @@ export default function CheckOutPage() {
   const loginToken = useLoginStore((s) => s.token);
   const loadLoginToken = useLoginStore((s) => s.loadTokenFromCookie);
   const signupToken = useSignupStore((s) => s.token);
+  const loadSignupToken = useSignupStore((s) => s.loadTokenFromCookie);
 
   const token = loginToken || signupToken;
 
@@ -26,10 +26,11 @@ export default function CheckOutPage() {
   // Load token from cookie & fetch cart
   useEffect(() => {
     loadLoginToken();
+    loadSignupToken();
 
     fetchCart();
     setHydrated(true);
-  }, [loadLoginToken, fetchCart]);
+  }, [loadLoginToken, loadSignupToken, fetchCart]);
 
   // Redirect logic
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function CheckOutPage() {
 
     // If token is not present, redirect to login
     if (!token) {
-      router.replace("/login");
+      router.replace("/login-in");
       return;
     }
 

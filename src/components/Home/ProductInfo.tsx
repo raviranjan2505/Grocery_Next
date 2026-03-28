@@ -4,44 +4,16 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import useCart from "@/app/store/useCart";
 import { API_BASE_URL } from "@/utils/api";
-
-export interface ProductImage {
-  imageName: string;
-  image: string;
-}
-
-export interface ProductDetails {
-  pid: number;
-  pCode: string;
-  productName: string;
-  categoryName: string;
-  subCategoryName: string;
-  wishlistEnable: boolean;
-  fullDescription?: string | null;
-  howToUse?: string;
-  details?: string;
-  shareingUrl?: string;
-  sellerName?: string | null;
-  dp: number; // discounted price
-  mrp: number; // original price
-  bv: number;
-  brandName?: string | null;
-  maxQuantity: number;
-  outstockPurchase: boolean;
-  showQty: boolean;
-  productImages: ProductImage[];
-  productSpecifications: any[];
-  productAttributes: any[];
-}
+import type { Product } from "@/lib/data";
 
 interface ProductInfoProps {
-  product: ProductDetails;
+  product: Product;
 }
 
 const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const { cartItems, addItem, increaseQuantity, decreaseQuantity } = useCart();
 
-  const productIdStr = String(product.pid);
+  const productIdStr = String(product.id);
   const inCart = cartItems.find((c) => String(c.item.id) === productIdStr);
   const qty = inCart?.quantity || 0;
 
@@ -49,12 +21,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     const item = {
       id: productIdStr,
       title: product.productName,
-      brand: product.brandName ?? "Unknown",
+      brand: product.brand?.name ?? "Unknown",
       price: product.dp,
-      img: product.productImages?.[0]
-        ? `${API_BASE_URL}${product.productImages[0].image}`
+      img: product.images?.[0]
+        ? `${API_BASE_URL}${product.images[0].url}`
         : "/fallback.png",
-      category: product.categoryName,
+      category: product.category?.name || "",
     };
     addItem(item);
   };
@@ -63,8 +35,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     <div className="flex flex-col w-full md:w-full px-4">
       {/* Title & Brand */}
       <h1 className="text-2xl font-bold">{product.productName}</h1>
-      {product.brandName && (
-        <p className="text-gray-500 text-sm mt-1">by {product.brandName}</p>
+      {product.brand?.name && (
+        <p className="text-gray-500 text-sm mt-1">by {product.brand.name}</p>
       )}
 
       {/* Price */}
@@ -77,11 +49,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       <div className="mt-6">
         <h3 className="font-semibold">Highlights</h3>
         <ul className="list-disc list-inside text-gray-600 mt-2">
-          <li>Category: {product.categoryName}</li>
-          <li>Sub Category: {product.subCategoryName}</li>
-          <li>Product Code: {product.pCode}</li>
-          <li>Max Quantity: {product.maxQuantity}</li>
-          {product.sellerName && <li>Seller: {product.sellerName}</li>}
+          <li>Category: {product.category?.name}</li>
+          <li>Brand: {product.brand?.name}</li>
+          <li>Product Code: {product.productCode}</li>
+          <li>Stock: {product.stockQuantity}</li>
         </ul>
       </div>
 

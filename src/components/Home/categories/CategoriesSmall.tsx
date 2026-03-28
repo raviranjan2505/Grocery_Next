@@ -4,29 +4,29 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { getCategories, CategoryResponse } from "@/lib/actions/action";
+import { getCategories } from "@/lib/actions/action";
+import { API_BASE_URL } from "@/utils/api";
+import type { Category } from "@/lib/data";
 import CategorySkeleton from "@/components/Loaders/CategorySkeleton";
 
-interface Category {
+interface CatDisplay {
   id: number;
   title: string;
   img: string;
 }
 
 const Categories = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CatDisplay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const allCategories = await getCategories();
-        const mapped = allCategories.map((cat: CategoryResponse) => ({
-          id: cat.categoryId,
-          title: cat.categoryName,
-          img: cat.catimg
-            ? `https://forestgarden.nexusitsoftech.com${cat.catimg}`
-            : "/image/daily_use.png",
+        const mapped = allCategories.map((cat: Category) => ({
+          id: cat.id,
+          title: cat.name,
+          img: cat.image ? `${cat.image}` : "/image/daily_use.png",
         }));
 
         setCategories(mapped);
@@ -51,7 +51,7 @@ const Categories = () => {
           ? Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
           : categories.map((cat) => (
               <Link key={cat.id} href={`products/${cat.id}`}>
-                <Card className="cursor-pointer hover:shadow-md transition rounded-xl">
+                <Card className="cursor-pointer hover:shadow-md transition rounded-xl h-[190px]">
                   <CardContent className="p-2 flex flex-col items-center">
                     <Image
                       src={cat.img}

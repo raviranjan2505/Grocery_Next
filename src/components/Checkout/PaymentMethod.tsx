@@ -6,9 +6,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+export type CheckoutPaymentMethod =
+  | "wallets"
+  | "cards"
+  | "netbanking"
+  | "upi"
+  | "cash"
+  | "paylater";
+
 interface PaymentMethodProps {
-  selectedPayment: string;
-  setSelectedPayment: (method: string) => void;
+  selectedPayment: CheckoutPaymentMethod;
+  setSelectedPayment: (method: CheckoutPaymentMethod) => void;
 }
 
 export default function PaymentMethod({ selectedPayment, setSelectedPayment }: PaymentMethodProps) {
@@ -16,17 +24,26 @@ export default function PaymentMethod({ selectedPayment, setSelectedPayment }: P
 
   return (
     <div className="w-full bg-white rounded-lg shadow p-4">
-      <Accordion type="single" collapsible className="w-full">
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        value={selectedPayment}
+        onValueChange={(value) => {
+          if (!value) return;
+          setSelectedPayment(value as CheckoutPaymentMethod);
+        }}
+      >
 
         <AccordionItem value="wallets">
-          <AccordionTrigger onClick={() => setSelectedPayment("wallets")}>Wallets</AccordionTrigger>
+          <AccordionTrigger>Wallets</AccordionTrigger>
           <AccordionContent>
             <p className="text-sm text-gray-600">Pay using your favorite wallet.</p>
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="cards">
-          <AccordionTrigger onClick={() => setSelectedPayment("cards")}>Credit/Debit Card</AccordionTrigger>
+          <AccordionTrigger>Credit/Debit Card</AccordionTrigger>
           <AccordionContent>
             <Input placeholder="Card Number" className="mb-2" />
             <Input placeholder="MM/YY" className="mb-2" />
@@ -36,14 +53,14 @@ export default function PaymentMethod({ selectedPayment, setSelectedPayment }: P
         </AccordionItem>
 
         <AccordionItem value="netbanking">
-          <AccordionTrigger onClick={() => setSelectedPayment("netbanking")}>Netbanking</AccordionTrigger>
+          <AccordionTrigger>Netbanking</AccordionTrigger>
           <AccordionContent>
             <p className="text-sm text-gray-600">Choose your bank to continue.</p>
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="upi">
-          <AccordionTrigger onClick={() => setSelectedPayment("upi")}>UPI</AccordionTrigger>
+          <AccordionTrigger>UPI</AccordionTrigger>
           <AccordionContent>
             <div className="p-3 border rounded-lg">
               <Input placeholder="example@upi" className="mb-2" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
@@ -53,14 +70,14 @@ export default function PaymentMethod({ selectedPayment, setSelectedPayment }: P
         </AccordionItem>
 
         <AccordionItem value="cash">
-          <AccordionTrigger onClick={() => setSelectedPayment("cash")}>Cash on Delivery</AccordionTrigger>
+          <AccordionTrigger>Cash on Delivery</AccordionTrigger>
           <AccordionContent>
             <p className="text-sm text-gray-600">Pay with cash upon delivery.</p>
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="paylater">
-          <AccordionTrigger onClick={() => setSelectedPayment("paylater")}>Pay Later</AccordionTrigger>
+          <AccordionTrigger>Pay Later</AccordionTrigger>
           <AccordionContent>
             <p className="text-sm text-gray-600">Use Pay Later services to complete the order.</p>
           </AccordionContent>

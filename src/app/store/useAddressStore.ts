@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import { Address } from "@/lib/actions/action"
+import type { Address } from "@/lib/data";
 
 interface AddressStore {
   selectedAddress: Address | null
@@ -21,5 +21,5 @@ const useAddressStore = create(
     }
   )
 )
+export default useAddressStore;
 
-export default useAddressStore

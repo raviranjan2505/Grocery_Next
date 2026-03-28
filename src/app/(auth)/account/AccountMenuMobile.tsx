@@ -87,7 +87,7 @@ export default function AccountMenuMobile() {
               {/* Account Info */}
               <div className="p-4 border-b">
                 <p className="text-lg font-medium">
-                  7042472287
+                  {user?.email || "Guest"}
                 </p>
               </div>
 

@@ -31,8 +31,8 @@ export default function CategoriesMain() {
       try {
         const allCategories = await getCategories();
         const firstThree = allCategories.slice(0, 3).map((cat, idx) => ({
-          id: cat.categoryId,
-          title: cat.categoryName,
+          id: cat.id,
+          title: cat.name,
           img: promoImages[idx].img, // override with promo image
           bg: promoImages[idx].bg,
         }));
@@ -46,17 +46,17 @@ export default function CategoriesMain() {
     };
 
     fetchCategories();
-  }, );
+  }, []);
 
   
   return (
     <div className="px-4 md:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
       {loading
         ? Array.from({ length: 3 }).map((_, i) => <CategoriesMainSkeleton key={i} />) // ✅ use skeleton
-        : categories.map((cat) => (
+        : categories.map((cat, idx) => (
             <Link key={cat.id} href={`products/${cat.id}`}>
               <Card
-                className={`rounded-2xl shadow-md p-4 flex flex-col justify-between cursor-pointer hover:shadow-lg transition ${cat.bg}`}
+                className={`rounded-2xl h-[200px] shadow-md p-4 flex flex-col justify-between cursor-pointer hover:shadow-lg transition ${cat.bg}`}
               >
                 <CardContent className="flex justify-between h-full">
                   <div>
@@ -69,6 +69,8 @@ export default function CategoriesMain() {
                       alt={cat.title}
                       width={200}
                       height={120}
+                      priority={idx === 0} // Add priority to first image for LCP
+                      style={{ width: "auto", height: "auto" }} // Maintain aspect ratio
                       className="object-contain"
                     />
                   </div>

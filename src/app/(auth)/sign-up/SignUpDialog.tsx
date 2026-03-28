@@ -7,11 +7,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-import SignUpMobileStep from "./SignUpMobileStep"
-import SignUpOtpStep from "./SignUpOtpStep"
-import { useEffect } from "react"
+import { useEffect, type FormEvent } from "react"
 import { toast } from "sonner"
 import { useSignupStore } from "@/app/store/useSignupStore"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 interface SignUpDialogProps {
   open: boolean
@@ -19,10 +19,17 @@ interface SignUpDialogProps {
 }
 
 export default function SignUpDialog({ open, onOpenChange }: SignUpDialogProps) {
-  const step = useSignupStore((s) => s.step)
   const error = useSignupStore((s) => s.error)
 const successMessage = useSignupStore((s) => s.successMessage)
   const setSuccessMessage = useSignupStore((s) => s.setSuccessMessage)
+  const email = useSignupStore((s) => s.email)
+  const password = useSignupStore((s) => s.password)
+  const name = useSignupStore((s) => s.name)
+  const setEmail = useSignupStore((s) => s.setEmail)
+  const setPassword = useSignupStore((s) => s.setPassword)
+  const setName = useSignupStore((s) => s.setName)
+  const signup = useSignupStore((s) => s.signup)
+  const isLoading = useSignupStore((s) => s.isLoading)
 
 useEffect(() => {
   if (!successMessage) return
@@ -39,6 +46,11 @@ useEffect(() => {
     toast.error(`Signup Failed \n${error}`)
   }, [error])
 
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    await signup({ email, password, name })
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fixed h-[60%] left-1/2 -translate-x-1/2 sm:top-1/2 sm:-translate-y-1/2 bottom-0 sm:rounded-xl rounded-t-2xl w-full max-w-md">
@@ -52,19 +64,43 @@ useEffect(() => {
             </span>
           </DialogTitle>
           <DialogDescription className="text-center text-gray-600">
-            {step === "mobile" ? "Sign up" : "Enter OTP sent to your number"}
+            Sign up with email
           </DialogDescription>
         </DialogHeader>
 
-        {step === "mobile" ? <SignUpMobileStep /> : <SignUpOtpStep resendDuration={60} />}
+        <form onSubmit={onSubmit} className="flex flex-col gap-4 mt-4">
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name (optional)"
+            autoComplete="name"
+          />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email address"
+            autoComplete="email"
+          />
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            autoComplete="new-password"
+          />
 
-        {step === "mobile" && (
-          <p className="text-xs text-gray-500 text-center mt-3">
+          <Button className="bg-green-600 hover:bg-green-900 text-black" type="submit" disabled={isLoading}>
+            {isLoading ? "Creating account..." : "Create account"}
+          </Button>
+
+          <p className="text-xs text-gray-500 text-center">
             By continuing, you agree to our{" "}
             <span className="underline">Terms of service</span> &{" "}
             <span className="underline">Privacy policy</span>
           </p>
-        )}
+        </form>
       </DialogContent>
     </Dialog>
   )

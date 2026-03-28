@@ -4,6 +4,11 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import useCart from "@/app/store/useCart"
+import { Heart } from "lucide-react"
+import { toast } from "sonner"
+import { useWishlistStore } from "@/app/store/useWishlistStore"
+import { useLoginStore } from "@/app/store/useLoginStore"
+import { useSignupStore } from "@/app/store/useSignupStore"
 
 export interface UIProductCard {
   id: string
@@ -25,8 +30,44 @@ export default function ProductCard({ product }: ProductCardProps) {
   const inCart = cartItems.find((c) => c.item.id === product.id)
   const qty = inCart?.quantity || 0
 
+  const loginToken = useLoginStore((s) => s.token)
+  const signupToken = useSignupStore((s) => s.token)
+  const token = loginToken || signupToken
+
+  const wishlistToggle = useWishlistStore((s) => s.toggle)
+  const isWishlisted = useWishlistStore((s) => s.isWishlisted)
+  const wishlistSyncing = useWishlistStore((s) => s.syncing)
+  const wished = isWishlisted(product.id)
+
   return (
-    <div className="bg-white rounded-2xl shadow-md p-3 hover:shadow-lg transition duration-200 h-full flex flex-col justify-between border border-gray-300">
+    <div className="relative bg-white rounded-2xl shadow-md p-3 hover:shadow-lg transition duration-200 h-full flex flex-col justify-between border border-gray-300">
+      <button
+        type="button"
+        aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+        disabled={wishlistSyncing}
+        onClick={async (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+
+          if (!token) {
+            toast.error("Please login to use wishlist")
+            return
+          }
+
+          const res = await wishlistToggle(Number(product.id))
+          if (!res) {
+            toast.error("Wishlist update failed")
+            return
+          }
+          toast.success(res.added ? "Added to wishlist" : "Removed from wishlist")
+        }}
+        className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 shadow-sm border border-gray-200 hover:bg-white disabled:opacity-60"
+      >
+        <Heart
+          className={wished ? "h-4 w-4 text-red-500" : "h-4 w-4 text-gray-500"}
+          fill={wished ? "currentColor" : "none"}
+        />
+      </button>
       {/* Product Image */}
       <Link href={`/products/${product.categoryId}/${product.slag}`} className="block">
         <div className="relative w-full h-36 md:h-40 lg:h-44 mb-2">

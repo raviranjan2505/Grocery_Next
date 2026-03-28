@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 
 type OrderItem = {
   item: {
@@ -23,6 +24,7 @@ type OrderSummary = {
 export default function OrderSummaryPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<OrderSummary | null>(null);
+  const notifiedRef = useRef(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("justPlacedOrderItems");
@@ -34,11 +36,15 @@ export default function OrderSummaryPage() {
     }
 
     setSummary(JSON.parse(stored));
+    if (!notifiedRef.current) {
+      notifiedRef.current = true;
+      toast.success("Order placed successfully!");
+    }
 
-    
-     const timer = setTimeout(() => {
-     localStorage.removeItem("justPlacedOrder");
-    localStorage.removeItem("justPlacedOrderItems");
+
+    const timer = setTimeout(() => {
+      localStorage.removeItem("justPlacedOrder");
+      localStorage.removeItem("justPlacedOrderItems");
     }, 5000);
     return () => clearTimeout(timer);
   }, [router]);
@@ -58,13 +64,15 @@ export default function OrderSummaryPage() {
           <div className="space-y-2">
             {summary.items.map(({ item, quantity }) => (
               <div key={item.id} className="flex items-center gap-3 border p-2 rounded">
-                
+
                 <Image
-  src={item.img}
-  alt={item.title}
-  className="w-16 h-16 object-cover rounded"
-/>
-               
+                  src={item.img}
+                  alt={item.title}
+                  className="w-16 h-16 object-cover rounded"
+                  width={16}
+                  height={16}
+                />
+
                 <div className="flex-1">
                   <p className="font-medium">{item.title}</p>
                   <p className="text-sm text-gray-500">Qty: {quantity}</p>

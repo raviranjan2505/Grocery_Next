@@ -51,7 +51,7 @@ export default function AccountMenu() {
       <DropdownMenuContent align="end" className="w-64 p-2">
         <DropdownMenuLabel>
           <div className="font-semibold">My Account</div>
-          <div className="text-sm text-gray-600">user</div>
+          <div className="text-sm text-gray-600">{user?.email || "Guest"}</div>
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />

@@ -8,7 +8,8 @@ import ProductCard, { UIProductCard } from "@/components/Home/ProductCard";
 import ProductCardSkeleton from "@/components/Loaders/ProductCardSkeleton";
 import ProductImageGallerySkeleton from "@/components/Loaders/ProductImageGallerySkeleton";
 import ProductInfoSkeleton from "@/components/Loaders/ProductInfoSkeleton";
-import {ProductDetails,getProductDetails, getProductsBySlug, getCategoryById } from "@/lib/actions/action";
+import {getProductDetails, getProductsBySlug, getCategoryById } from "@/lib/actions/action";
+import type { Product } from "@/lib/data";
 import { API_BASE_URL } from "@/utils/api";
 
 export default function ProductDetailsPage() {
@@ -18,7 +19,7 @@ export default function ProductDetailsPage() {
   }>();
 
   const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState<ProductDetails | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<UIProductCard[]>([]);
 
   useEffect(() => {
@@ -29,33 +30,37 @@ export default function ProductDetailsPage() {
         // ✅ get product details
         const prodRes = await getProductDetails(slag);
         if (!prodRes?.data) return notFound();
-        setProduct(prodRes.data); // prodRes.data matches Product interface
+        setProduct(prodRes.data); // prodRes.data is the actual product
 
         // ✅ get related category
         const relatedCategory = await getCategoryById(Number(categoriesById));
-        if (relatedCategory?.data?.slagurl) {
-          const slug = relatedCategory.data.slagurl;
+        if (relatedCategory?.data?.slug) {
+          const slug = relatedCategory.data.slug;
 
           // ✅ get products by category slug
           const prodRes2 = await getProductsBySlug(slug);
           if (prodRes2?.data?.items) {
             const mapped: UIProductCard[] = prodRes2.data.items.map(
               (p: any): UIProductCard => ({
-                id: String(p.productId ?? p.pid),
-                categoryId: p.categoryId,
+                id: String(p.id),
+                categoryId: String(p.categoryId),
                 title: p.productName,
                 subtitle: p.productCode,
-                price: p.dp,
-                slag: p.slagurl,
+                price: Number(p.dp ?? 0),
+                slag: p.productCode,
                 img: p.defaultImage?.startsWith("http")
                   ? p.defaultImage
-                  : `${API_BASE_URL}${p.defaultImage}`,
+                  : p.defaultImage
+                    ? `${API_BASE_URL}${p.defaultImage}`
+                    : "/image/bread.png",
                 deliveryTime: "16 MINS",
               })
             );
             setProducts(mapped);
           }
         }
+      } catch (error) {
+        console.error("Error in product details fetchData:", error);
       } finally {
         setLoading(false);
       }
@@ -82,17 +87,19 @@ export default function ProductDetailsPage() {
     );
 
   // ✅ if no product found
-  if (!product) return notFound();
+  if (!product) {
+    return notFound();
+  }
 
   return (
-    <main className="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <main key={product.id} className="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
       <ProductImageGallery
         images={
-          product.productImages?.length
-            ? product.productImages.map((img) =>
-                img.image?.startsWith("http")
-                  ? img.image
-                  : `${API_BASE_URL}${img.image}`
+          product.images?.length
+            ? product.images.map((img) =>
+                img.url?.startsWith("http")
+                  ? img.url
+                  : `${API_BASE_URL}${img.url}`
               )
             : ["/image/bread.png"]
         }

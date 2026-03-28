@@ -13,25 +13,21 @@ type User = {
   role: "USER" | "SUPER_ADMIN" | null;
 };
 
-type Step = "mobile" | "otp";
-
 type LoginStore = {
   user: User | null;
   token: string | null;
-  step: Step;
   isLoading: boolean;
   error: string | null;
-  mobile: string;
-  otp: string[];
   successMessage: string | null;
 
-  setMobile: (mobile: string) => void;
-  setOtp: (otp: string[]) => void;
-  setStep: (step: Step) => void;
+  email: string;
+  password: string;
+
+  setEmail: (email: string) => void;
+  setPassword: (password: string) => void;
   setSuccessMessage: (msg: string | null) => void;
 
-  sendOtp: (mobile: string) => Promise<boolean>;
-  verifyOtp: (mobile: string, otp: string[]) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   loadTokenFromCookie: () => void;
 };
@@ -40,90 +36,83 @@ export const useLoginStore = create<LoginStore>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
-      step: "mobile",
+      token: Cookies.get("authToken") ?? null,
       isLoading: false,
       error: null,
-      mobile: "",
-      otp: Array(6).fill(""),
       successMessage: null,
+      email: "",
+      password: "",
 
-      setMobile: (mobile) => set({ mobile }),
-      setOtp: (otp) => set({ otp }),
-      setStep: (step) => set({ step }),
+      setEmail: (email) => set({ email }),
+      setPassword: (password) => set({ password }),
       setSuccessMessage: (msg) => set({ successMessage: msg }),
 
-      sendOtp: async (mobile) => {
-        if (!mobile || mobile.length !== 10) {
-          set({ error: "Invalid mobile number" });
+      login: async (email, password) => {
+        if (!email?.trim() || !password) {
+          set({ error: "Email and password are required" });
           return false;
         }
-
-        set({ isLoading: true, error: null });
-        try {
-          const res = await axiosInstance.post(`${API_ROUTES.AUTH}/signin/send-otp`, { MobileNumber: mobile });
-          set({ step: "otp", isLoading: false });
-          console.log(res)
-          return true;
-        } catch (err: any) {
-          set({ isLoading: false, error: err?.response?.data?.message || "Failed to send OTP" });
-          return false;
-        }
-      },
-
-      verifyOtp: async (mobile, otp) => {
-        if (!mobile || otp.length !== 6) {
-          set({ error: "Invalid mobile number or OTP" });
-          return false;
-        }
-
         set({ isLoading: true, error: null, successMessage: null });
-
         try {
-          const res = await axiosInstance.post(`${API_ROUTES.AUTH}/signin/verify-otp`, {
-            MobileNumber: mobile,
-            Otp: otp.join(""),
+          const res = await axiosInstance.post(`${API_ROUTES.AUTH}/login`, {
+            email: email.trim(),
+            password,
           });
 
-          const user = res.data?.data?.userData ?? null;
-          const token = res.data?.data?.token ?? null;
+          const token = res.data?.accessToken ?? null;
+          const refreshToken = res.data?.refreshToken ?? null;
+          const userId = res.data?.userId ?? null;
+          const role = res.data?.Role ?? null;
 
           if (!token) {
-            set({ isLoading: false, error: "OTP verification failed: No token received" });
+            set({ isLoading: false, error: "Login failed: No access token received" });
             return false;
           }
 
-          Cookies.set("authToken", token, { path: "/", sameSite: "strict" });
+          Cookies.set("authToken", token, { path: "/", sameSite: "Lax" });
+          if (refreshToken) {
+            Cookies.set("refreshToken", refreshToken, {
+              path: "/",
+              sameSite: "Lax",
+              expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            });
+          }
 
           set({
-            user,
+            user: userId
+              ? {
+                  id: String(userId),
+                  name: null,
+                  email: email.trim(),
+                  role,
+                }
+              : null,
             token,
-            step: "mobile",
-            mobile: "",
-            otp: Array(6).fill(""),
             isLoading: false,
-            successMessage: "OTP Verified. Login Successful!",
+            successMessage: "Login successful!",
+            email: "",
+            password: "",
           });
 
           return true;
         } catch (err: any) {
-          set({ isLoading: false, error: err.response?.data?.message || "OTP verification failed" });
+          set({ isLoading: false, error: err.response?.data?.message || "Login failed" });
           return false;
         }
       },
 
       logout: () => {
         Cookies.remove("authToken");
+        Cookies.remove("refreshToken");
         localStorage.removeItem("authToken");
         localStorage.removeItem("address-storage")
         set({
           user: null,
           token: null,
-          step: "mobile",
-          mobile: "",
-          otp: Array(6).fill(""),
           successMessage: null,
           error: null,
+          email: "",
+          password: "",
         });
       },
 
@@ -134,12 +123,12 @@ export const useLoginStore = create<LoginStore>()(
     }),
     {
       name: "login-storage",
-      partialize: (state) => ({
-        user: state.user,
-        mobile: state.mobile,
-        otp: state.otp,
-        step: state.step,
-      }),
+      version: 2,
+      partialize: (state) => ({ user: state.user }),
+      migrate: (persistedState: any) => ({ user: persistedState?.user ?? null }),
+      onRehydrateStorage: () => (state) => {
+        state?.loadTokenFromCookie?.();
+      },
     }
   )
 );

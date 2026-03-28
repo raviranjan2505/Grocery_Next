@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useCart from "@/app/store/useCart";
-import { Address } from "@/lib/actions/action";
+import type { Address } from "@/lib/data";
 import { useRouter } from "next/navigation";
 
 interface CartViewProps {

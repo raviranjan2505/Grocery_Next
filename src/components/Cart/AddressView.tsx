@@ -5,13 +5,16 @@ import { useState, useEffect } from "react";
 import AddressDialog from "@/app/(root)/cart/AddressDialog";
 import LoginDialog from "@/app/(auth)/login-in/LoginDialog";
 import { useLoginStore } from "@/app/store/useLoginStore";
+import { useSignupStore } from "@/app/store/useSignupStore";
 import {
   getAddresses,
   addAddress,
   updateAddress,
   deleteAddress,
-  Address,
 } from "@/lib/actions/action";
+import type { Address } from "@/lib/data";
+import Cookies from "js-cookie";
+import Skeleton from "@/components/Loaders/Skeleton";
 
 interface AddressViewProps {
   onBack: () => void;
@@ -23,19 +26,28 @@ export default function AddressView({ onBack, onSelectAddress }: AddressViewProp
   const [loginOpen, setLoginOpen] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const token = useLoginStore((s) => s.token);
+  const loginToken = useLoginStore((s) => s.token);
+  const signupToken = useSignupStore((s) => s.token);
+  const token = loginToken || signupToken || Cookies.get("authToken") || null;
 
   // Load addresses
   const loadAddresses = async () => {
     if (!token) return;
-    const data = await getAddresses(token);
-    setAddresses(data || []);
+    setLoading(true);
+    try {
+      const data = await getAddresses();
+      setAddresses(data || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadAddresses();
-  },);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const handleSaveAddress = async (data: Address) => {
     if (!token) {
@@ -44,14 +56,14 @@ export default function AddressView({ onBack, onSelectAddress }: AddressViewProp
     }
 
     if (data.id) {
-      const ok = await updateAddress(token, data); // ✅ send full object with id
+      const ok = await updateAddress(data); // ✅ send full object with id
       if (ok) {
         setEditingAddress(null);
         setAddressDialogOpen(false);
         await loadAddresses();
       }
     } else {
-      const saved = await addAddress(token, data);
+      const saved = await addAddress(data);
       if (saved) {
         setAddressDialogOpen(false);
         await loadAddresses();
@@ -66,13 +78,13 @@ export default function AddressView({ onBack, onSelectAddress }: AddressViewProp
 
   const handleDelete = async (id: number) => {
     if (!token) return;
-    const ok = await deleteAddress(token, id);
+    const ok = await deleteAddress(id);
     if (ok) await loadAddresses();
   };
 
   const handleSetDefault = async (addr: Address) => {
     if (!token || addr.isDefault) return;
-    const ok = await updateAddress(token, { ...addr, isDefault: true }); // ✅ consistent API
+    const ok = await updateAddress({ ...addr, isDefault: true }); // ✅ consistent API
     if (ok) await loadAddresses();
   };
 
@@ -99,6 +111,17 @@ export default function AddressView({ onBack, onSelectAddress }: AddressViewProp
       </button>
 
       <div className="space-y-3">
+        {loading && addresses.length === 0 && (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="border rounded-lg p-3">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            ))}
+          </div>
+        )}
         {addresses.map((addr) => (
           <div
             key={addr.id}
@@ -116,28 +139,25 @@ export default function AddressView({ onBack, onSelectAddress }: AddressViewProp
                 }}
               >
                 <p className="font-medium">
-                  {addr.addressType} {addr.isDefault && "(Default)"}
+                  {addr.type} {addr.isDefault && "(Default)"}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {addr.fullAddress}, {addr.locality}, {addr.city}, {addr.state} -{" "}
-                  {addr.pincode}
+                  {addr.address1}
+                  {addr.address2 ? `, ${addr.address2}` : ""}, {addr.city},{" "}
+                  {addr.state} - {addr.pincode}
                 </p>
-                {addr.landmark && (
-                  <p className="text-sm text-gray-500">Landmark: {addr.landmark}</p>
-                )}
-                <p className="text-sm text-gray-500">Mobile: {addr.mobile}</p>
-                {addr.alternatePhone && (
-                  <p className="text-sm text-gray-500">
-                    Alternate: {addr.alternatePhone}
-                  </p>
-                )}
+                <p className="text-sm text-gray-500">Phone: {addr.phone}</p>
               </div>
 
               <div className="flex gap-2">
                 <button onClick={() => handleEdit(addr)} className="text-blue-600">
                   <Edit className="w-5 h-5" />
                 </button>
-                <button onClick={() => handleDelete(addr.id)} className="text-red-600">
+                <button 
+                  onClick={() => addr.id && handleDelete(addr.id)} 
+                  className="text-red-600"
+                  disabled={!addr.id}
+                >
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>

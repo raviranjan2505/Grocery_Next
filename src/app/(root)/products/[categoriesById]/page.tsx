@@ -32,44 +32,103 @@ export default function CategoryWithProducts({ params }: CategoryPageProps) {
   const [products, setProducts] = useState<UIProductCard[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [parentSlug, setParentSlug] = useState<string>("");
+  const PAGE_SIZE = 50;
+
+  const mapProductsToUI = (items: any[]): UIProductCard[] =>
+    items.map(
+      (p: any): UIProductCard => ({
+        id: String(p.id),
+        categoryId: String(p.categoryId),
+        title: p.productName,
+        subtitle: p.productCode,
+        price: Number(p.dp ?? 0),
+        slag: p.productSlug || p.productCode,
+        img: p.defaultImage?.startsWith("http")
+          ? p.defaultImage
+          : p.defaultImage
+            ? `${API_BASE_URL}${p.defaultImage}`
+            : "/image/bread.png",
+        deliveryTime: "16 MINS",
+      })
+    );
+
+  const fetchAllCategoryProducts = async (slug: string) => {
+    let page = 1;
+    let totalPages = 1;
+    const allItems: any[] = [];
+
+    while (page <= totalPages) {
+      const prodRes = await getProductsBySlug(slug, page, PAGE_SIZE);
+      const items = Array.isArray(prodRes?.data?.items) ? prodRes.data.items : [];
+      totalPages = Number(prodRes?.data?.totalPages || 1);
+      allItems.push(...items);
+      page += 1;
+    }
+
+    return allItems;
+  };
+
+  const fetchAllSubcategoryProducts = async (parent: string, subcategorySlug: string) => {
+    let page = 1;
+    let totalPages = 1;
+    const allItems: any[] = [];
+
+    while (page <= totalPages) {
+      const prodRes = await getProductsBySubCategoriesSlug(parent, subcategorySlug, page, PAGE_SIZE);
+      const items = Array.isArray(prodRes?.data?.items) ? prodRes.data.items : [];
+      totalPages = Number(prodRes?.data?.totalPages || 1);
+      allItems.push(...items);
+      page += 1;
+    }
+
+    return allItems;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
+        console.log("Fetching category for ID:", categoriesById);
         const catRes = await getCategoryById(Number(categoriesById));
+        console.log("Category response:", catRes);
 
         if (catRes?.data) {
-          const parentSlugFromApi = catRes.data.slagurl;
+          const parentSlugFromApi = catRes.data.slug;
+          console.log("Parent slug:", parentSlugFromApi);
           setParentSlug(parentSlugFromApi);
 
           if (catRes.data.subcategories?.length > 0) {
-            setSubcategories(catRes.data.subcategories);
+            const mappedSubs = catRes.data.subcategories.map((sub: any) => ({
+              categoryId: sub.id,
+              categoryName: sub.name,
+              slagurl: sub.slug || sub.slagurl || "",
+              thumbnail: sub.image,
+              subcategories: sub.subcategories || [],
+            }));
+            setSubcategories(mappedSubs);
+            console.log("Subcategories set:", mappedSubs);
           }
 
           // default products (parent category)
           if (parentSlugFromApi) {
-            const prodRes = await getProductsBySlug(parentSlugFromApi);
-            if (prodRes?.data?.items) {
-              const mapped = prodRes.data.items.map(
-                (p: any): UIProductCard => ({
-                  id: String(p.productId),
-                  categoryId: p.categoryId,
-                  title: p.productName,
-                  subtitle: p.productCode,
-                  price: p.dp,
-                  slag: p.slagurl,
-                  img: p.defaultImage.startsWith("http")
-                    ? p.defaultImage
-                    : `${API_BASE_URL}${p.defaultImage}`,
-                  deliveryTime: "16 MINS",
-                })
-              );
+            const allItems = await fetchAllCategoryProducts(parentSlugFromApi);
+            console.log("Products for parent category:", allItems.length);
+            if (allItems.length > 0) {
+              const mapped = mapProductsToUI(allItems);
               setProducts(mapped);
+              console.log("Products mapped and set:", mapped);
+            } else {
+              console.log("No products found in response");
             }
+          } else {
+            console.log("No parent slug available");
           }
+        } else {
+          console.log("No category data received");
         }
+      } catch (error) {
+        console.error("Error in fetchData:", error);
       } finally {
         setLoading(false);
       }
@@ -81,27 +140,15 @@ export default function CategoryWithProducts({ params }: CategoryPageProps) {
   // ✅ load products by subcategory click
   const handleSubcategoryClick = async (subcategorySlug: string) => {
     try {
+      if (!subcategorySlug || !parentSlug) {
+        setProducts([]);
+        return;
+      }
       setLoading(true);
-      const prodRes = await getProductsBySubCategoriesSlug(
-        parentSlug,
-        subcategorySlug
-      );
+      const allItems = await fetchAllSubcategoryProducts(parentSlug, subcategorySlug);
 
-      if (prodRes?.data?.items) {
-        const mapped = prodRes.data.items.map(
-          (p: any): UIProductCard => ({
-            id: String(p.productId),
-            categoryId: p.categoryId,
-            title: p.productName,
-            subtitle: p.productCode,
-            price: p.dp,
-            slag: p.slagurl,
-            img: p.defaultImage.startsWith("http")
-              ? p.defaultImage
-              : `${API_BASE_URL}${p.defaultImage}`,
-            deliveryTime: "16 MINS",
-          })
-        );
+      if (allItems.length > 0) {
+        const mapped = mapProductsToUI(allItems);
         setProducts(mapped);
       } else {
         setProducts([]);
@@ -127,7 +174,7 @@ export default function CategoryWithProducts({ params }: CategoryPageProps) {
   return (
     <div className="flex">
       {/* LEFT: Sticky Sidebar */}
-      <aside className="w-20 md:w-40 border-r bg-white h-screen sticky top-0 overflow-y-auto">
+      <aside className="w-32 md:w-40 border-r bg-white h-screen sticky top-0 overflow-y-auto">
         {subcategories.map((sub) => (
           <button
             key={sub.categoryId}

@@ -18,28 +18,41 @@ export default function GetProductByCategoriesSlug({ params }: CategoryPageProps
 
   const [products, setProducts] = useState<UIProductCard[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
+  console.log("product by catslug:", products);
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
         const prodRes = await getProductsBySlug(categoriesBySlug);
-        if (prodRes?.data?.items) {
-          const mapped = prodRes.data.items.map(
-            (p: any): UIProductCard => ({
-              id: String(p.productId),
-              categoryId: p.categoryId,
-              title: p.productName,
-              subtitle: p.productCode,
-              price: p.dp,
-              slag: p.slagurl,
-              img: p.defaultImage.startsWith("http")
-                ? p.defaultImage
-                : `${API_BASE_URL}${p.defaultImage}`,
+        const items = prodRes?.data?.items;
+        if (Array.isArray(items)) {
+          const mapped = items.map((p: any): UIProductCard => {
+            const slug = p?.productSlug || p?.productCode || "";
+            const imageUrl =
+              p?.defaultImage ||
+              p?.images?.find?.((i: any) => i?.isDefault)?.url ||
+              p?.images?.[0]?.url ||
+              "/image/bread.png";
+
+            const img =
+              typeof imageUrl === "string" && imageUrl.startsWith("http")
+                ? imageUrl
+                : imageUrl === "/image/bread.png"
+                  ? imageUrl
+                  : `${API_BASE_URL}${imageUrl}`;
+
+            return {
+              id: String(p?.id ?? ""),
+              categoryId: String(p?.categoryId ?? ""),
+              title: p?.productName || "",
+              subtitle: p?.shortDescription || p?.productCode || "",
+              price: Number(p?.dp ?? 0),
+              slag: slug,
+              img,
               deliveryTime: "16 MINS",
-            })
-          );
+            };
+          });
           setProducts(mapped);
         }
       } finally {

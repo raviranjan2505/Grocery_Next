@@ -1,48 +1,44 @@
 import axiosInstance from "@/lib/axios";
 import { API_ROUTES, API_BASE_URL } from "@/utils/api";
-import Cookies from "js-cookie";
+import type {
+  ProductDetails,
+  SliderProduct,
+  Category,
+  Banner,
+  Address,
+  CartResponse,
+  CartItem,
+  CartTotal,
+  Order,
+  OrderDetail,
+} from "@/lib/data";
 
-export interface ProductImage {
-  imageName: string;
-  image: string;
+function toAddressPayload(address: Partial<Address>) {
+  const fullName = (address.fullName || address.name || "").trim();
+  const phone = (address.phone || address.mobile || address.alternatePhone || "").trim();
+  const country = (address.country || "India").trim() || "India";
+  const type = (address.type || address.addressType || "HOME") as "HOME" | "WORK" | "OTHER";
+
+  return {
+    fullName,
+    phone,
+    address1: (address.address1 || address.fullAddress || "").trim(),
+    address2: (address.address2 || "").trim() || null,
+    city: (address.city || "").trim(),
+    state: (address.state || "").trim(),
+    country,
+    pincode: (address.pincode || "").trim(),
+    type,
+    isDefault: !!address.isDefault,
+  };
 }
-
-export interface ProductSpecification {
-  id: number;
-  pid: number;
-  name: string;
-  value: string;
-}
-
-// src/lib/actions/types.ts
-export interface ProductDetails {
-  pid: number;
-  pCode: string;
-  productName: string;
-  categoryName: string;
-  subCategoryName: string;
-  details: string;
-  dp: number;
-  mrp: number;
-  wishlistEnable: boolean;
-  sellerName: string;
-  maxQuantity: number;
-  outstockPurchase: boolean;
-  showQty: boolean;
-  bv: number; 
-  productImages: ProductImage[];
-  productSpecifications: ProductSpecification[];
-  productAttributes: any[];
-}
-
-
 
 export const getProductDetails = async (
   slag: string
 ): Promise<{ success: boolean; message: string; data: ProductDetails } | null> => {
   try {
     const res = await axiosInstance.get<{ success: boolean; message: string; data: ProductDetails }>(
-      `${API_ROUTES.PRODUCTS}/slag/${slag}`
+      `${API_ROUTES.PRODUCTS}/${slag}`
     );
     return res.data;
   } catch (error) {
@@ -54,56 +50,40 @@ export const getProductDetails = async (
 export const getProductsBySearch = async (query: string): Promise<ProductDetails[]> => {
   try {
     const res = await axiosInstance.get(
-      `${API_ROUTES.PRODUCTS}/searchbytext?searchText=${encodeURIComponent(query)}`
+      `${API_ROUTES.PRODUCTS}/search?q=${encodeURIComponent(query)}`
     );
 
-    const searchResults = res.data;
-    if (!Array.isArray(searchResults) || searchResults.length === 0) return [];
+    const payload = res.data?.data ?? null;
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.items)
+      ? payload.items
+      : [];
 
-    const detailedProducts = await Promise.all(
-      searchResults.map(async (item: any) => {
-        if (!item?.product_slagurl) return null;
-
-        const detailRes = await getProductDetails(item.product_slagurl);
-        if (!detailRes?.success || !detailRes.data) return null;
-
-        // Attach slug for ProductCard navigation
-        return {
-          ...detailRes.data,
-          product_slagurl: item.product_slagurl,
-        } as ProductDetails & { product_slagurl?: string };
-      })
-    );
-
-    return detailedProducts.filter((p): p is ProductDetails => !!p);
+    return Array.isArray(items) ? (items as ProductDetails[]) : [];
   } catch (err) {
     console.error("getProductsBySearch error:", err);
     return [];
   }
 };
 
-export interface SliderProduct {
-  id: number;        
-  categoryId: string; 
-  title: string;
-  subtitle: string;
-  slag: string; 
-  price: number;
-  img: string;
-  deliveryTime?: string;
-}
-export interface CategoryResponse {
-  categoryId: number;
-  categoryName: string;
-  slagurl: string;
-  catimg: string | null;
-  subcategories: CategoryResponse[];
-}
+// ✅ Get all categories - with caching
+let categoriesCache: Category[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// ✅ Get all categories
-export const getCategories = async (): Promise<CategoryResponse[]> => {
+export const getCategories = async (): Promise<Category[]> => {
+  const now = Date.now();
+  
+  // Return cached data if fresh
+  if (categoriesCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+    return categoriesCache;
+  }
+
   try {
-    const res = await axiosInstance.get<{ data: CategoryResponse[] }>(API_ROUTES.CATEGORIES);
+    const res = await axiosInstance.get<{ data: Category[] }>(API_ROUTES.CATEGORIES);
+    categoriesCache = res.data.data;
+    cacheTimestamp = now;
     return res.data.data;
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -123,10 +103,11 @@ export async function getCategoryById(id: number) {
 }
 
 // ✅ Get products by category slug
-export async function getProductsBySlug(slug: string) {
+export async function getProductsBySlug(slug: string, page = 1, pageSize = 10) {
   try {
-    const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/category/${slug}`);
-   
+    const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/category/${slug}`, {
+      params: { page, pageSize },
+    });
     return res.data;
   } catch (error) {
     console.error("Error fetching products by slug:", error);
@@ -134,44 +115,74 @@ export async function getProductsBySlug(slug: string) {
   }
 }
 
-export async function getProductsBySubCategoriesSlug(slug: string, subcategoryslug:string){
+export async function getProductsBySubCategoriesSlug(
+  slug: string,
+  subcategoryslug: string,
+  page = 1,
+  pageSize = 10
+) {
   try {
-    const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/category/${slug}/${subcategoryslug}`);
+    const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/category/${slug}/${subcategoryslug}`, {
+      params: { page, pageSize },
+    });
     return res.data;
   }catch(error) {
     console.error("Error fetching products by subcategoryId:", error)
+    return null;
   }
 }
+
+// ✅ Get categories for slider - with caching
+let sliderCategoriesCache: { slug: string; name: string; categorySlagUrl: string; products: SliderProduct[] }[] | null = null;
+let sliderCacheTimestamp: number | null = null;
+const SLIDER_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const getCategoriesForSlider = async (): Promise<
   { slug: string; name: string;  categorySlagUrl:string; products: SliderProduct[] }[]
 > => {
-  try {
-    const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/homeproducts`);
-    const json = res.data;
+  const now = Date.now();
+  
+  // Return cached data if fresh
+  if (sliderCategoriesCache && sliderCacheTimestamp && (now - sliderCacheTimestamp) < SLIDER_CACHE_DURATION) {
+    return sliderCategoriesCache;
+  }
 
-    const categories = json.data.map((cat: any) => {
-      const products: SliderProduct[] = cat.homeProductItems.map((p: any) => ({
-        id: p.pid,
-        categoryId: String(cat.categoryId ?? cat.name), 
+  try {
+    const res = await axiosInstance.get(`${API_ROUTES.PRODUCTS}/category-sliders`);
+    const json = res.data.data;
+    console.log("Raw slider data:", json); // Debug log
+
+    if (!Array.isArray(json)) {
+      console.error("Expected array but got:", typeof json);
+      return [];
+    }
+
+    // Store in cache
+    const categories = json.map((cat: any) => {
+      // Handle cases where products might be undefined or null
+      const productsData = cat?.products || [];
+      
+      const products: SliderProduct[] = productsData.map((p: any) => ({
+        id: p.id,
+        categoryId: String(cat.id), 
         title: p.productName,
-        subtitle: p.productCode ?? p.productSlag ?? "",
-        slag: p.productSlag ?? "",
-        price: p.dp,
-        img: p.defaultImage?.startsWith("http")
-          ? p.defaultImage
-          : `${API_BASE_URL}${p.defaultImage}`,
+        subtitle: p.shortDescription || p.productCode || "",
+        slag: p.productCode || "",
+        price: p.price || p.dp || 0,
+        img: p.defaultImage || p.images?.[0]?.url || cat.image || "",
         deliveryTime: "2-3 Days",
       }));
 
       return {
-        slug: cat.name.toLowerCase().replace(/\s+/g, "-"),
+        slug: cat.slug,
         name: cat.name,
-        categorySlagUrl:cat.categorySlagUrl,
+        categorySlagUrl: cat.slug,
         products,
       };
     });
 
+    sliderCategoriesCache = categories;
+    sliderCacheTimestamp = now;
     return categories;
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -190,90 +201,32 @@ export const getProductsByCategory = async (
 };
 
 
-// types for banners
-export interface Banner {
-  imgId: number;
-  pid: number;
-  imgName: string;
-  imgUrl: string;
-  defaultImg: boolean;
-  isActive: boolean;
-  bannerTypeId: number;
-  bannerTypeName: string;
-  link: number;
-  linkType: number;
-  displayOrder: number;
-  categoryId: number;
-  productId: number;
-}
-
-
 export const getActiveBanners = async (): Promise<Banner[]> => {
   try {
     const res = await axiosInstance.get<{ data: Banner[] }>(
-      `${API_ROUTES.BANNERS}/active`
+      `${API_ROUTES.BANNERS}`
     );
-    return res.data.data.map((b: Banner) => ({
-      ...b,
-      imgUrl: b.imgUrl.startsWith("http")
-        ? b.imgUrl
-        : `${API_BASE_URL}${b.imgUrl}`,
-    }));
+    return res.data.data
+      .filter(b => b.isActive !== false)
+      .map((b: Banner) => ({
+        ...b,
+        imgUrl: (b.imgUrl || b.image || "").startsWith("http")
+          ? (b.imgUrl || b.image || "")
+          : `${API_BASE_URL}${b.imgUrl || b.image || ""}`,
+      }));
   } catch (error) {
     console.error("Error fetching banners:", error);
     return [];
   }
 };
 
-
-
 // --------------------- TYPES ---------------------
-export interface Address {
-  id: number
-  userId?: number
-  name: string
-  mobile: string
-  pincode: string
-  locality: string
-  fullAddress: string
-  city: string
-  state: string // <-- now store stateId
-  landmark?: string
-  alternatePhone?: string
-  addressType: string
-  isDefault: boolean
-}
-
-export interface State {
-  sid: number
-  cid: number
-  stateName: string
-  sActive: number
-}
-
-// Get all states
-export const getStates = async (): Promise<State[]> => {
-  try {
-    const res = await axiosInstance.get<{ success: boolean; data: State[] }>(
-      "https://forestgarden.nexusitsoftech.com/api/member/Address/GetStates"
-    )
-    if (res.data.success) {
-      return res.data.data
-    }
-    return []
-  } catch (error) {
-    console.error("Error fetching states:", error)
-    return []
-  }
-}
-
 // Get all addresses
-export const getAddresses = async (token: string): Promise<Address[]> => {
+export const getAddresses = async (): Promise<Address[]> => {
   try {
-    const res = await axiosInstance.get<{ data: Address[] }>(API_ROUTES.ADDRESS, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    return res.data.data
+    const res = await fetch("/api/address", { method: "GET", cache: "no-store" });
+    const json = await res.json();
+    return json?.data || [];
   } catch (error) {
     console.error("Error fetching addresses:", error)
     return []
@@ -282,65 +235,39 @@ export const getAddresses = async (token: string): Promise<Address[]> => {
 
 // Add a new address
 export const addAddress = async (
-  token: string,
   address: Omit<Address, "id" | "userId">
 ): Promise<Address | null> => {
   try {
-    const payload = {
-      name: address.name,
-      mobile: address.mobile,
-      pincode: address.pincode,
-      locality: address.locality,
-      fullAddress: address.fullAddress,
-      city: address.city,
-      state: address.state.toString(), // <-- send SID as string
-      landmark: address.landmark || "",
-      alternatePhone: address.alternatePhone || "",
-      addressType: address.addressType,
-      isDefault: address.isDefault,
-    }
-
-    const res = await axiosInstance.post<Address>(API_ROUTES.ADDRESS, payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    return res.data
+    const payload = toAddressPayload(address);
+    const res = await fetch("/api/address", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    return json?.data || null;
   } catch (error: any) {
-    console.error("Error adding address:", error.response?.data || error.message)
-    return null
+    console.error("Error adding address:", error.response?.data || error.message);
+    return null;
   }
-}
+};
 
 
 // Get address by ID
-export const getAddressById = async (token: string, id: number): Promise<Address | null> => {
-  try {
-    const res = await axiosInstance.get<Address>(`${API_ROUTES.ADDRESS}/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    return res.data
-  } catch (error) {
-    console.error("Error fetching address by id:", error)
-    return null
-  }
-}
+// Removed as not available in new API
 
 export const updateAddress = async (
-  token: string,
-  address: Address // pass full Address object including id
+  address: Address
 ): Promise<boolean> => {
   try {
-    const res = await axiosInstance.put(
-      `${API_ROUTES.ADDRESS}/${address.id}`,
-      address, // send full address object
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return res.status === 200;
+    if (!address.id) return false;
+    const payload = toAddressPayload(address);
+    const res = await fetch(`/api/address/${address.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
   } catch (error: any) {
     console.error("Error updating address:", error.response?.data || error.message);
     return false;
@@ -350,12 +277,10 @@ export const updateAddress = async (
 
 
 //Delete address
-export const deleteAddress = async (token: string, id: number): Promise<boolean> => {
+export const deleteAddress = async (id: number): Promise<boolean> => {
   try {
-    const res = await axiosInstance.delete(`${API_ROUTES.ADDRESS}/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    return res.status === 200
+    const res = await fetch(`/api/address/${id}`, { method: "DELETE" });
+    return res.ok;
   } catch (error) {
     console.error("Error deleting address:", error)
     return false
@@ -364,62 +289,60 @@ export const deleteAddress = async (token: string, id: number): Promise<boolean>
 
 
 
-export interface CartItemAPI {
-  slagurl: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  dp: string;
-  mrp: string;
-  picture: { thumbImageUrl: string };
-}
-
-export interface CartResponse {
-  cookieId: string;
-  shoppingCartItems: number;
-  wishlistItems: number;
-  items: CartItemAPI[];
-}
-
-export interface CartTotal {
-  subTotal: number;
-  discount: number;
-  tax: number;
-  shipping: number;
-  payableAmt: number;
-}
-
 // Add / remove item
 export const saveOrUpdateCart = async (
   productID: string,
   quantity: number,
-  type: "insert" | "remove",
-  cookiesID?: string
+  type: "insert" | "remove"
 ): Promise<CartResponse | null> => {
   try {
-    const payload = {
-      referralCode: "",
-      productID,
-      quantity: quantity.toString(),
-      cookiesID: cookiesID || "",
-      regno: "",
-      type,
-      attributes: [{ key: "", value: "" }]
-    };
-
-    const res = await axiosInstance.post(`${API_ROUTES.CARTS}/SaveOrUpdateCart`, payload);
-    return res.data.data;
+    const endpoint = type === "insert" ? "/add" : "/remove";
+    const payload = type === "insert" ? { productId: productID, quantity } : { productId: productID };
+    const res = await axiosInstance.post(`${API_ROUTES.CARTS}${endpoint}`, payload);
+    return res.data as CartResponse;
   } catch (error) {
     console.error("Error in saveOrUpdateCart:", error);
     return null;
   }
 };
 
-// Get all cart items
-export const getCartItems = async (cookiesID: string): Promise<CartResponse | null> => {
+export const increaseCartItem = async (
+  productID: string,
+  amount: number = 1
+): Promise<CartResponse | null> => {
   try {
-    const res = await axiosInstance.get(`${API_ROUTES.CARTS}/GetCartItems?cookieid=${cookiesID}`);
-    return res.data.data;
+    const res = await axiosInstance.post(`${API_ROUTES.CARTS}/increase`, {
+      productId: productID,
+      amount,
+    });
+    return res.data as CartResponse;
+  } catch (error) {
+    console.error("Error in increaseCartItem:", error);
+    return null;
+  }
+};
+
+export const decreaseCartItem = async (
+  productID: string,
+  amount: number = 1
+): Promise<CartResponse | null> => {
+  try {
+    const res = await axiosInstance.post(`${API_ROUTES.CARTS}/decrease`, {
+      productId: productID,
+      amount,
+    });
+    return res.data as CartResponse;
+  } catch (error) {
+    console.error("Error in decreaseCartItem:", error);
+    return null;
+  }
+};
+
+// Get all cart items
+export const getCartItems = async (): Promise<CartResponse | null> => {
+  try {
+    const res = await axiosInstance.get(`${API_ROUTES.CARTS}`);
+    return res.data as CartResponse;
   } catch (error) {
     console.error("Error in getCartItems:", error);
     return null;
@@ -427,10 +350,27 @@ export const getCartItems = async (cookiesID: string): Promise<CartResponse | nu
 };
 
 // Get cart totals
-export const getCartTotal = async (cookiesID: string): Promise<CartTotal | null> => {
+export const getCartTotal = async (): Promise<CartTotal | null> => {
   try {
-    const res = await axiosInstance.get(`${API_ROUTES.CARTS}/GetCartTotal?cookieid=${cookiesID}`);
-    return res.data.data;
+    const cartResponse = await getCartItems();
+    if (!cartResponse || !cartResponse.data) return null;
+    
+    const cart = cartResponse.data;
+    const items = cart.items || [];
+    
+    // Calculate totals from cart items
+    const subTotal = items.reduce((sum: number, item: CartItem) => {
+      const price = item.dp ? parseFloat(item.dp) : (item.price || 0);
+      return sum + price * (item.quantity || 0);
+    }, 0);
+    
+    return {
+      subTotal,
+      discount: 0, // TODO: implement discounts
+      tax: 0, // TODO: implement tax
+      shipping: 0, // TODO: implement shipping
+      payableAmt: subTotal,
+    };
   } catch (error) {
     console.error("Error in getCartTotal:", error);
     return null;
@@ -442,58 +382,42 @@ export const getCartTotal = async (cookiesID: string): Promise<CartTotal | null>
 
 // Checkout API
 export const handleCheckoutAPI = async (
-  cookieId: string,
-  selectedAddressId: number,
-  paymentMethod: string
+  addressId: number,
+  paymentMethod: "COD" | "ONLINE",
+  couponCode?: string | null
 ) => {
   try {
-    const token = Cookies.get("authToken");
-    console.log(token,"token")
-    const payload = {
-      cookieId,
-      selectedAddressId,
-      paymentMethod,
-      regno: 1,
-    };
+    const normalizedCoupon = typeof couponCode === "string" ? couponCode.trim().toUpperCase() : null;
+    // Ensure server has latest checkout snapshot (stored in redis by userId).
+    await axiosInstance.post(
+      `${API_ROUTES.CHECKOUTS}/preview`,
+      normalizedCoupon ? { couponCode: normalizedCoupon } : {}
+    );
 
-    const res = await axiosInstance.post(`${API_ROUTES.CHECKOUTS}/PlaceOrder`, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`, // send token here
-        "Content-Type": "application/json",
-      },
-    });
-
+    const res = await axiosInstance.post(`${API_ROUTES.CHECKOUTS}/placeOrder`, { addressId, paymentMethod });
     return res.data;
-  } catch (error: any) {
-    console.error("Checkout error:", error.response ?? error);
-    return null;
+  } catch (error: unknown) {
+    const maybeAxios = error as { response?: { data?: any; status?: number }; message?: string };
+    const message =
+      maybeAxios?.response?.data?.message ||
+      maybeAxios?.message ||
+      "Checkout failed. Try again.";
+    console.error("Checkout error:", maybeAxios?.response ?? error);
+    return { success: false, message };
   }
 };
 
 
 
-export interface OrderItem {
-  productId: number;
-  productName: string;
-  image: string;
-  totalPrice: number;
-}
-
-export interface Order {
-  orderPlaced: string;
-  orderAmount: number;
-  orderNumber: string;
-  shipToCustomerName: string;
-  status: string;
-  orderItems: OrderItem[];
-}
 
 export const getMyOrder = async (): Promise<Order[] | null> => {
   try {
-    const res = await axiosInstance.get(`${API_ROUTES.ORDERS}/GetMyOrdersHistory`);
-    if (res.data.success) {
-      return res.data.data;
-    }
+    const res = await axiosInstance.get(`${API_ROUTES.ORDERS}`);
+
+    // order-service `GET /v1/order` returns a paginated object: { items, page, ... }
+    const data = res.data?.data;
+    if (Array.isArray(data)) return data as Order[];
+    if (Array.isArray(data?.items)) return data.items as Order[];
     return [];
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -502,36 +426,27 @@ export const getMyOrder = async (): Promise<Order[] | null> => {
 };
 
 
-export interface OrderDetailItem {
-  productId: number;
-  productName: string;
-  image: string;
-  totalPrice: number;
-}
-
-export interface OrderDetail {
-  orderPlaced: string;
-  orderAmount: number;
-  orderNumber: string;
-  shipToCustomerName: string;
-  status: string;
-  orderItems: OrderDetailItem[];
-}
-
 export const getOrderDetails = async (orderNo: string): Promise<OrderDetail | null> => {
   try {
     const res = await axiosInstance.get(
-      `${API_ROUTES.ORDERS}/GetOrderPlacedDetails?orderNo=${orderNo}`
+      `${API_ROUTES.ORDERS}/${orderNo}`
     );
-
-    if (res.data.success && res.data.data.length > 0) {
-      // The API returns an array but we only need the first object
-      return res.data.data[0];
-    }
-    return null;
+    return res.data.data;
   } catch (error) {
     console.error("Error fetching order details:", error);
     return null;
+  }
+};
+
+export const cancelMyOrder = async (orderId: string | number): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const res = await axiosInstance.post(`${API_ROUTES.ORDERS}/${orderId}/cancel`, {});
+    return { success: !!res.data?.success, message: res.data?.message };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err?.response?.data?.message || err?.message || "Cancel failed",
+    };
   }
 };
 
